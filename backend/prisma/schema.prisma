@@ -46,12 +46,23 @@ model Post {
   category    Category @relation(fields: [categoryId], references: [id])
   authorId    String?
   author      User?    @relation(fields: [authorId], references: [id])
+  // Aggregated voting metrics for truth scoring
+  helpfulTruthCount Int     @default(0)
+  justCruelCount    Int     @default(0)
+  truthScore        Float   @default(0)
+
+  // Resolution lifecycle
+  resolvedAt  DateTime?
+
+  // Children
+  replies Reply[]
+  votes   Vote[]
 }
 
 model Vote {
   id        String   @id @default(uuid())
   postId    String
-  post      Post     @relation(fields: [postId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   voterId   String?
   voter     User?    @relation(fields: [voterId], references: [id])
   tag       VoteTag
@@ -61,4 +72,44 @@ model Vote {
 enum VoteTag {
   HELPFUL_TRUTH
   JUST_CRUEL
+}
+
+model Reply {
+  id          String   @id @default(uuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId    String?
+  author      User?    @relation(fields: [authorId], references: [id])
+  content     String
+  isAnonymous Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  votes       ReplyVote[]
+}
+
+model ReplyVote {
+  id        String   @id @default(uuid())
+  replyId   String
+  reply     Reply    @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  voterId   String?
+  voter     User?    @relation(fields: [voterId], references: [id])
+  tag       VoteTag
+  createdAt DateTime @default(now())
+}
+
+model Flag {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  flaggerId String?
+  flagger   User?    @relation(fields: [flaggerId], references: [id])
+  type      FlagType
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+enum FlagType {
+  DELUSIONAL
+  CRUELTY
+  OTHER
 }

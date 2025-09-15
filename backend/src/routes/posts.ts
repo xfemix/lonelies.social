@@ -22,7 +22,7 @@ const createPostSchema = z.object({
 
 router.get('/', async (_req, res) => {
   const posts = await prisma.post.findMany({
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ truthScore: 'desc' }, { createdAt: 'desc' }],
     include: { category: true }
   });
   res.json(posts);
