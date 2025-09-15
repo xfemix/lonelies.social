@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     Post[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  name      String
+  description String
+  order     Int
+  posts     Post[]
+}
+
+enum PostType {
+  FIX_MY_LIFE
+  AM_I_DELUSIONAL
+  WHY_DO_PEOPLE_AVOID_ME
+  RATE_MY_SITUATION
+  EXISTENTIAL_CRISIS
+  SOCIAL_AUTOPSY
+}
+
+model Post {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  type        PostType
+  isAnonymous Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  authorId    String?
+  author      User?    @relation(fields: [authorId], references: [id])
+}
+
+model Vote {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  voterId   String?
+  voter     User?    @relation(fields: [voterId], references: [id])
+  tag       VoteTag
+  createdAt DateTime @default(now())
+}
+
+enum VoteTag {
+  HELPFUL_TRUTH
+  JUST_CRUEL
+}
