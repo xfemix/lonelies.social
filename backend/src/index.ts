@@ -28,6 +28,7 @@ import repliesRouter from './routes/replies.js';
 import flagsRouter from './routes/flags.js';
 import resolveRouter from './routes/resolve.js';
 import rouletteRouter from './routes/roulette.js';
+import replyVotesRouter from './routes/replyVotes.js';
 
 app.use('/categories', categoriesRouter);
 app.use('/posts', postsRouter);
@@ -36,6 +37,7 @@ app.use('/replies', repliesRouter);
 app.use('/flags', flagsRouter);
 app.use('/resolve', resolveRouter);
 app.use('/roulette', rouletteRouter);
+app.use('/reply-votes', replyVotesRouter);
 
 const port = Number(process.env.PORT || 4000);
 app.listen(port, () => {

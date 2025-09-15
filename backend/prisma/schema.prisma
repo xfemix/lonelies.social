@@ -39,6 +39,7 @@ model Post {
   title       String
   content     String
   type        PostType
+  realityCheck Boolean  @default(false)
   isAnonymous Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

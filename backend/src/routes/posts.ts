@@ -17,7 +17,8 @@ const createPostSchema = z.object({
     'RATE_MY_SITUATION',
     'EXISTENTIAL_CRISIS',
     'SOCIAL_AUTOPSY'
-  ])
+  ]),
+  realityCheck: z.boolean().optional().default(false)
 });
 
 router.get('/', async (_req, res) => {
@@ -41,10 +42,25 @@ router.post('/', async (req, res) => {
       content: data.content,
       type: data.type,
       isAnonymous: data.isAnonymous,
-      categoryId: data.categoryId
+      categoryId: data.categoryId,
+      realityCheck: data.realityCheck
     }
   });
   res.status(201).json(post);
+});
+
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const post = await prisma.post.findUnique({
+      where: { id },
+      include: { category: true }
+    });
+    if (!post) return res.status(404).json({ error: 'not found' });
+    res.json(post);
+  } catch {
+    res.status(400).json({ error: 'invalid id' });
+  }
 });
 
 export default router;
