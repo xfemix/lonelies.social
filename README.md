@@ -1,4 +1,5 @@
 # lonelies.social
+official repo for lonelies.social
 
 Anonymous retro letter archive for lonely people.
 
