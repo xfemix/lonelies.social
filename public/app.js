@@ -60,6 +60,15 @@ function toIsoDate(isoString) {
   return new Date(isoString).toISOString().slice(0, 10);
 }
 
+function currentActivitySelection() {
+  const year = Number(yearSelect.value);
+  const month = Number(monthSelect.value);
+  return {
+    year: Number.isInteger(year) ? year : undefined,
+    month: Number.isInteger(month) ? month : undefined,
+  };
+}
+
 function titleForPost(post) {
   const datePart = toIsoDate(post.created_at);
   return `Archive ${datePart} #${post.id} | lonelies.social`;
@@ -173,6 +182,9 @@ async function loadPosts() {
 function renderCalendar(activity) {
   const year = Number(activity.selectedYear);
   const month = Number(activity.selectedMonth);
+  const todayYear = Number(activity.today?.year || 0);
+  const todayMonth = Number(activity.today?.month || 0);
+  const todayDay = Number(activity.today?.day || 0);
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const firstWeekDay = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
   const countsByDay = new Map();
@@ -195,12 +207,17 @@ function renderCalendar(activity) {
     const dayNode = document.createElement('button');
     const dateValue = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const count = countsByDay.get(dateValue) || 0;
+    const isFutureDay = year === todayYear && month === todayMonth && day > todayDay;
     dayNode.type = 'button';
     dayNode.className = 'day-cell';
     dayNode.textContent = String(day);
     dayNode.dataset.date = dateValue;
 
-    if (count > 0) {
+    if (isFutureDay) {
+      dayNode.classList.add('future');
+      dayNode.disabled = true;
+      dayNode.title = `${dateValue} is in the future`;
+    } else if (count > 0) {
       dayNode.classList.add('active');
       const ratio = maxCount ? count / maxCount : 0;
       if (ratio <= 0.25) dayNode.classList.add('level-1');
@@ -209,6 +226,7 @@ function renderCalendar(activity) {
       else dayNode.classList.add('level-4');
       dayNode.title = `${count} letters on ${dateValue}`;
     } else {
+      dayNode.classList.add('no-activity');
       dayNode.disabled = true;
       dayNode.title = `No letters on ${dateValue}`;
     }
@@ -232,17 +250,42 @@ function renderYearOptions(years, selectedYear) {
   }
 }
 
-function renderMonthOptions(months, selectedMonth) {
+function renderMonthOptions(months, monthCounts, selectedMonth, selectedYear, today) {
   monthSelect.innerHTML = '';
-  const sourceMonths = months.length ? months : monthNames.map((_, index) => index + 1);
+  const activeMonths = new Set((months || []).map((month) => Number(month)));
+  const countsByMonth = new Map();
+  for (const item of monthCounts || []) {
+    countsByMonth.set(Number(item.month), Number(item.count));
+  }
 
-  for (const month of sourceMonths) {
+  const currentYear = Number(today?.year || 0);
+  const currentMonth = Number(today?.month || 0);
+  let selectedExists = false;
+
+  for (let month = 1; month <= 12; month += 1) {
+    const isFutureMonth = Number(selectedYear) === currentYear && month > currentMonth;
+    if (isFutureMonth) continue;
+
+    const count = countsByMonth.get(month) || 0;
+    const hasActivity = activeMonths.has(month) || count > 0;
     const option = document.createElement('option');
     option.value = String(month);
-    option.textContent = monthNames[Number(month) - 1] || String(month);
-    if (Number(month) === Number(selectedMonth)) option.selected = true;
+    option.textContent = `${monthNames[month - 1]} (${count})`;
+    option.disabled = !hasActivity;
+    if (Number(month) === Number(selectedMonth)) {
+      option.selected = true;
+      selectedExists = true;
+    }
     monthSelect.append(option);
   }
+
+  if (!selectedExists) {
+    const fallback = Array.from(monthSelect.options).find((option) => !option.disabled) || monthSelect.options[0];
+    if (fallback) fallback.selected = true;
+  }
+
+  const selectedOption = monthSelect.selectedOptions[0];
+  monthFilterButton.disabled = !selectedOption || selectedOption.disabled;
 }
 
 async function loadActivity(year, month) {
@@ -259,7 +302,13 @@ async function loadActivity(year, month) {
     }
 
     renderYearOptions(data.years || [], data.selectedYear);
-    renderMonthOptions(data.months || [], data.selectedMonth);
+    renderMonthOptions(
+      data.months || [],
+      data.monthCounts || [],
+      data.selectedMonth,
+      data.selectedYear,
+      data.today || {}
+    );
     renderCalendar(data);
   } catch (error) {
     calendarGrid.innerHTML = '';
@@ -271,6 +320,8 @@ async function loadActivity(year, month) {
 function applyMonthFilter() {
   const year = Number(yearSelect.value);
   const month = Number(monthSelect.value);
+  const selectedOption = monthSelect.selectedOptions[0];
+  if (selectedOption?.disabled) return;
   if (!Number.isInteger(year) || !Number.isInteger(month)) return;
 
   const first = `${year}-${String(month).padStart(2, '0')}-01`;
@@ -327,6 +378,8 @@ async function submitLetter(event) {
     nicknameInput.value = '';
     letterInput.value = '';
     await loadPosts();
+    const selection = currentActivitySelection();
+    await loadActivity(selection.year, selection.month);
   } catch (error) {
     setStatus(error.message || 'Could not post letter.', true);
   }
@@ -427,6 +480,8 @@ clearMonthFilterButton.addEventListener('click', () => {
   fromDateInput.value = '';
   toDateInput.value = '';
   loadPosts();
+  const selection = currentActivitySelection();
+  loadActivity(selection.year, selection.month);
 });
 
 calendarGrid.addEventListener('click', (event) => {
@@ -490,3 +545,8 @@ searchInput.addEventListener('keydown', (event) => {
 
 loadPosts().then(ensureSharedTitleFromServer);
 loadActivity();
+
+window.setInterval(() => {
+  const selection = currentActivitySelection();
+  loadActivity(selection.year, selection.month);
+}, 60000);

@@ -276,6 +276,15 @@ button:hover {
   border-color: var(--neon);
 }
 
+.day-cell.no-activity {
+  opacity: 0.6;
+}
+
+.day-cell.future {
+  opacity: 0.35;
+  border-style: dashed;
+}
+
 .day-cell.level-1 {
   background: rgba(53, 224, 181, 0.18);
 }

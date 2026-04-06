@@ -138,6 +138,9 @@ module.exports = async function handler(req, res) {
 
       if (viewRaw === 'activity') {
         const currentUtcDate = new Date();
+        const currentYear = currentUtcDate.getUTCFullYear();
+        const currentMonth = currentUtcDate.getUTCMonth() + 1;
+        const currentDay = currentUtcDate.getUTCDate();
         const requestedYear = Number(req.query?.year);
         const requestedMonth = Number(req.query?.month);
 
@@ -151,6 +154,7 @@ module.exports = async function handler(req, res) {
         );
 
         const years = yearsResult.rows.map((row) => Number(row.year)).filter((year) => Number.isInteger(year));
+        if (!years.includes(currentYear)) years.unshift(currentYear);
 
         const fallbackYear = years.length ? years[0] : currentUtcDate.getUTCFullYear();
         const selectedYear = Number.isInteger(requestedYear) && requestedYear >= 1970 && requestedYear <= 2200
@@ -170,6 +174,24 @@ module.exports = async function handler(req, res) {
         const months = monthsResult.rows
           .map((row) => Number(row.month))
           .filter((month) => Number.isInteger(month) && month >= 1 && month <= 12);
+
+        const monthCountsResult = await client.query(
+          `
+            SELECT EXTRACT(MONTH FROM created_at)::INT AS month, COUNT(*)::INT AS count
+            FROM letters
+            WHERE EXTRACT(YEAR FROM created_at) = $1
+            GROUP BY EXTRACT(MONTH FROM created_at)
+            ORDER BY month ASC
+          `,
+          [selectedYear]
+        );
+
+        const monthCounts = monthCountsResult.rows
+          .map((row) => ({
+            month: Number(row.month),
+            count: Number(row.count),
+          }))
+          .filter((row) => Number.isInteger(row.month) && row.month >= 1 && row.month <= 12);
 
         const fallbackMonth = months.length ? months[months.length - 1] : currentUtcDate.getUTCMonth() + 1;
         const selectedMonth = Number.isInteger(requestedMonth) && requestedMonth >= 1 && requestedMonth <= 12
@@ -201,10 +223,16 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 200, {
           years,
           months,
+          monthCounts,
           selectedYear,
           selectedMonth,
           days: daysResult.rows,
           monthTotal: Number(monthTotalResult.rows[0]?.total || 0),
+          today: {
+            year: currentYear,
+            month: currentMonth,
+            day: currentDay,
+          },
         });
       }
 
