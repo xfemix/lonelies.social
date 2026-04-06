@@ -195,6 +195,105 @@ button:hover {
   margin-top: 0.8rem;
 }
 
+.calendar-box {
+  margin-top: 0.8rem;
+  border: 1px dashed rgba(245, 215, 77, 0.35);
+  padding: 0.7rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.calendar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  align-items: baseline;
+}
+
+.calendar-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.calendar-summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.calendar-controls {
+  margin-top: 0.5rem;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+
+.calendar-controls label {
+  color: var(--muted);
+}
+
+.calendar-controls button {
+  width: 100%;
+}
+
+.calendar-weekdays {
+  margin-top: 0.55rem;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.3rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.calendar-grid {
+  margin-top: 0.3rem;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.day-cell {
+  border: 1px solid rgba(245, 215, 77, 0.25);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+  min-height: 2rem;
+  display: grid;
+  place-items: center;
+  padding: 0.25rem;
+  font-size: 0.78rem;
+}
+
+.day-cell.empty {
+  opacity: 0.35;
+}
+
+.day-cell.active {
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.day-cell.active:hover {
+  border-color: var(--neon);
+}
+
+.day-cell.level-1 {
+  background: rgba(53, 224, 181, 0.18);
+}
+
+.day-cell.level-2 {
+  background: rgba(53, 224, 181, 0.32);
+}
+
+.day-cell.level-3 {
+  background: rgba(53, 224, 181, 0.5);
+}
+
+.day-cell.level-4 {
+  background: rgba(53, 224, 181, 0.72);
+  color: #081816;
+  font-weight: 700;
+}
+
 .post {
   border: 1px dotted rgba(53, 224, 181, 0.45);
   background: rgba(0, 0, 0, 0.25);
@@ -294,6 +393,10 @@ button:hover {
   }
 
   .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-controls {
     grid-template-columns: 1fr;
   }
 

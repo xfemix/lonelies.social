@@ -3,36 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>lonelies.social | Anonymous Letter Archive</title>
+    <title>lonelies.social | Anonymous Letters, Archive, and Search</title>
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
     <meta
       name="description"
-      content="An anonymous retro space where lonely people share short and long letters. No login, optional nickname, permanent archive."
+      content="lonelies.social is an anonymous letter archive for lonely people. Post private thoughts with optional nicknames, search letters, and browse by date calendar."
     />
-    <meta name="keywords" content="anonymous letters, lonely people, retro social site, private writing, letter archive" />
-    <link rel="canonical" href="https://loneliessocial.vercel.app/" />
+    <meta
+      name="keywords"
+      content="lonelies social, lonelies.social, anonymous letters, lonely people, online letter archive, private writing site, retro anonymous social, no login journal, letter sharing, emotional writing, night thoughts, confessions archive, date based archive, searchable letters"
+    />
+    <link rel="canonical" href="https://lonelies.social/" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="lonelies.social" />
-    <meta property="og:title" content="lonelies.social | Anonymous Letter Archive" />
+    <meta property="og:title" content="lonelies.social | Anonymous Letters, Archive, and Search" />
     <meta
       property="og:description"
-      content="Leave a letter, read the archive, and stay anonymous."
+      content="Write anonymous letters, search the archive, and browse activity by calendar date."
     />
-    <meta property="og:url" content="https://loneliessocial.vercel.app/" />
+    <meta property="og:url" content="https://lonelies.social/" />
 
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="lonelies.social | Anonymous Letter Archive" />
-    <meta name="twitter:description" content="Leave a letter, read the archive, and stay anonymous." />
+    <meta name="twitter:title" content="lonelies.social | Anonymous Letters, Archive, and Search" />
+    <meta name="twitter:description" content="Anonymous letters, searchable archive, and calendar-based browsing on lonelies.social." />
 
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "lonelies.social",
-        "url": "https://loneliessocial.vercel.app/",
-        "description": "Anonymous retro letter archive with no login and optional nickname.",
-        "inLanguage": "en"
+        "url": "https://lonelies.social/",
+        "description": "Anonymous retro letter archive with no login, search, and calendar browsing.",
+        "inLanguage": "en",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://lonelies.social/?search={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
       }
     </script>
     <link rel="stylesheet" href="/styles.css" />
@@ -105,6 +113,32 @@
         <p class="archive-note">
           Close the tab and you're gone. The letters aren't.
         </p>
+        <section class="calendar-box" aria-labelledby="calendar-title">
+          <div class="calendar-head">
+            <h3 id="calendar-title">Archive Calendar</h3>
+            <p id="calendar-summary" class="calendar-summary"></p>
+          </div>
+          <div class="calendar-controls">
+            <label for="year-select">Year</label>
+            <select id="year-select"></select>
+
+            <label for="month-select">Month</label>
+            <select id="month-select"></select>
+
+            <button id="month-filter" type="button">Show Month</button>
+            <button id="clear-month-filter" type="button">Clear Month</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>Sun</span>
+            <span>Mon</span>
+            <span>Tue</span>
+            <span>Wed</span>
+            <span>Thu</span>
+            <span>Fri</span>
+            <span>Sat</span>
+          </div>
+          <div id="calendar-grid" class="calendar-grid" role="grid"></div>
+        </section>
         <div id="posts" class="posts" aria-live="polite"></div>
       </section>
     </main>

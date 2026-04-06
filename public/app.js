@@ -11,6 +11,30 @@ const toDateInput = document.getElementById('to-date');
 const sortSelect = document.getElementById('sort');
 const applyFiltersButton = document.getElementById('apply-filters');
 const clearFiltersButton = document.getElementById('clear-filters');
+const yearSelect = document.getElementById('year-select');
+const monthSelect = document.getElementById('month-select');
+const monthFilterButton = document.getElementById('month-filter');
+const clearMonthFilterButton = document.getElementById('clear-month-filter');
+const calendarGrid = document.getElementById('calendar-grid');
+const calendarSummary = document.getElementById('calendar-summary');
+
+const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters, Archive, and Search';
+let latestPosts = [];
+
+const monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 function hasDraft() {
   return Boolean(nicknameInput.value.trim() || letterInput.value.trim());
@@ -30,6 +54,28 @@ function formatDate(isoString) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function toIsoDate(isoString) {
+  return new Date(isoString).toISOString().slice(0, 10);
+}
+
+function titleForPost(post) {
+  const datePart = toIsoDate(post.created_at);
+  return `Archive ${datePart} #${post.id} | lonelies.social`;
+}
+
+function setTitleFromLinkedPost(posts) {
+  const params = new URLSearchParams(window.location.search);
+  const requestedPost = Number(params.get('post'));
+  if (!Number.isInteger(requestedPost) || requestedPost <= 0) {
+    document.title = DEFAULT_TITLE;
+    return;
+  }
+
+  const found = posts.find((post) => Number(post.id) === requestedPost);
+  if (!found) return;
+  document.title = titleForPost(found);
 }
 
 function postShareUrl(postId) {
@@ -54,6 +100,7 @@ function highlightLinkedPost() {
 }
 
 function renderPosts(posts) {
+  latestPosts = posts;
   postsRoot.innerHTML = '';
 
   if (!posts.length) {
@@ -82,11 +129,13 @@ function renderPosts(posts) {
     shareButton.dataset.id = String(post.id);
     shareButton.dataset.name = safeName;
     shareButton.dataset.letter = post.letter;
+    shareButton.dataset.createdAt = post.created_at;
 
     postsRoot.append(clone);
   }
 
   highlightLinkedPost();
+  setTitleFromLinkedPost(posts);
 }
 
 function buildQueryString() {
@@ -118,6 +167,135 @@ async function loadPosts() {
   } catch (error) {
     renderPosts([]);
     setStatus(error.message || 'Could not load posts.', true);
+  }
+}
+
+function renderCalendar(activity) {
+  const year = Number(activity.selectedYear);
+  const month = Number(activity.selectedMonth);
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const firstWeekDay = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const countsByDay = new Map();
+  const maxCount = activity.days.reduce((max, item) => Math.max(max, Number(item.count || 0)), 0);
+
+  for (const item of activity.days) {
+    countsByDay.set(item.day, Number(item.count || 0));
+  }
+
+  calendarGrid.innerHTML = '';
+
+  for (let i = 0; i < firstWeekDay; i += 1) {
+    const spacer = document.createElement('div');
+    spacer.className = 'day-cell empty';
+    spacer.setAttribute('aria-hidden', 'true');
+    calendarGrid.append(spacer);
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const dayNode = document.createElement('button');
+    const dateValue = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const count = countsByDay.get(dateValue) || 0;
+    dayNode.type = 'button';
+    dayNode.className = 'day-cell';
+    dayNode.textContent = String(day);
+    dayNode.dataset.date = dateValue;
+
+    if (count > 0) {
+      dayNode.classList.add('active');
+      const ratio = maxCount ? count / maxCount : 0;
+      if (ratio <= 0.25) dayNode.classList.add('level-1');
+      else if (ratio <= 0.5) dayNode.classList.add('level-2');
+      else if (ratio <= 0.75) dayNode.classList.add('level-3');
+      else dayNode.classList.add('level-4');
+      dayNode.title = `${count} letters on ${dateValue}`;
+    } else {
+      dayNode.disabled = true;
+      dayNode.title = `No letters on ${dateValue}`;
+    }
+
+    calendarGrid.append(dayNode);
+  }
+
+  calendarSummary.textContent = `${monthNames[month - 1]} ${year}: ${activity.monthTotal} letters`;
+}
+
+function renderYearOptions(years, selectedYear) {
+  yearSelect.innerHTML = '';
+  const safeYears = years.length ? years : [new Date().getUTCFullYear()];
+
+  for (const year of safeYears) {
+    const option = document.createElement('option');
+    option.value = String(year);
+    option.textContent = String(year);
+    if (Number(year) === Number(selectedYear)) option.selected = true;
+    yearSelect.append(option);
+  }
+}
+
+function renderMonthOptions(months, selectedMonth) {
+  monthSelect.innerHTML = '';
+  const sourceMonths = months.length ? months : monthNames.map((_, index) => index + 1);
+
+  for (const month of sourceMonths) {
+    const option = document.createElement('option');
+    option.value = String(month);
+    option.textContent = monthNames[Number(month) - 1] || String(month);
+    if (Number(month) === Number(selectedMonth)) option.selected = true;
+    monthSelect.append(option);
+  }
+}
+
+async function loadActivity(year, month) {
+  const params = new URLSearchParams();
+  params.set('view', 'activity');
+  if (Number.isInteger(year)) params.set('year', String(year));
+  if (Number.isInteger(month)) params.set('month', String(month));
+
+  try {
+    const response = await fetch(`/api/posts?${params.toString()}`);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Could not load archive calendar.');
+    }
+
+    renderYearOptions(data.years || [], data.selectedYear);
+    renderMonthOptions(data.months || [], data.selectedMonth);
+    renderCalendar(data);
+  } catch (error) {
+    calendarGrid.innerHTML = '';
+    calendarSummary.textContent = 'Calendar unavailable right now.';
+    setStatus(error.message || 'Could not load archive calendar.', true);
+  }
+}
+
+function applyMonthFilter() {
+  const year = Number(yearSelect.value);
+  const month = Number(monthSelect.value);
+  if (!Number.isInteger(year) || !Number.isInteger(month)) return;
+
+  const first = `${year}-${String(month).padStart(2, '0')}-01`;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const last = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  fromDateInput.value = first;
+  toDateInput.value = last;
+  loadPosts();
+}
+
+async function ensureSharedTitleFromServer() {
+  const params = new URLSearchParams(window.location.search);
+  const requestedPost = Number(params.get('post'));
+  if (!Number.isInteger(requestedPost) || requestedPost <= 0) return;
+
+  if (latestPosts.some((post) => Number(post.id) === requestedPost)) return;
+
+  try {
+    const response = await fetch(`/api/posts?id=${requestedPost}`);
+    const data = await response.json();
+    if (!response.ok || !data.post) return;
+    document.title = titleForPost(data.post);
+  } catch {
+    // Keep default title if single post lookup fails.
   }
 }
 
@@ -177,10 +355,14 @@ async function sharePost(button) {
 
   const name = button.dataset.name || 'anonymous';
   const letter = button.dataset.letter || '';
+  const createdAt = button.dataset.createdAt || '';
   const snippet = letter.trim().slice(0, 120);
   const url = postShareUrl(postId);
+  const shareTitle = createdAt
+    ? `Archive ${toIsoDate(createdAt)} #${postId}`
+    : `Archive #${postId}`;
   const sharePayload = {
-    title: 'lonelies.social letter',
+    title: shareTitle,
     text: `${name}: ${snippet}${letter.length > 120 ? '...' : ''}`,
     url,
   };
@@ -228,6 +410,32 @@ clearFiltersButton.addEventListener('click', () => {
   fromDateInput.value = '';
   toDateInput.value = '';
   sortSelect.value = 'desc';
+  loadPosts();
+});
+
+yearSelect.addEventListener('change', () => {
+  loadActivity(Number(yearSelect.value), Number(monthSelect.value));
+});
+
+monthSelect.addEventListener('change', () => {
+  loadActivity(Number(yearSelect.value), Number(monthSelect.value));
+});
+
+monthFilterButton.addEventListener('click', applyMonthFilter);
+
+clearMonthFilterButton.addEventListener('click', () => {
+  fromDateInput.value = '';
+  toDateInput.value = '';
+  loadPosts();
+});
+
+calendarGrid.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLButtonElement)) return;
+  const dateValue = target.dataset.date;
+  if (!dateValue || target.disabled) return;
+  fromDateInput.value = dateValue;
+  toDateInput.value = dateValue;
   loadPosts();
 });
 
@@ -280,4 +488,5 @@ searchInput.addEventListener('keydown', (event) => {
   }
 });
 
-loadPosts();
+loadPosts().then(ensureSharedTitleFromServer);
+loadActivity();

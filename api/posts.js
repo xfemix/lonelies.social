@@ -110,6 +110,104 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 429, { error: 'Too many requests. Please slow down.' });
       }
 
+      const idRaw = typeof req.query?.id === 'string' ? req.query.id.trim() : '';
+      const viewRaw = typeof req.query?.view === 'string' ? req.query.view.trim().toLowerCase() : '';
+
+      if (idRaw) {
+        const id = Number(idRaw);
+        if (!Number.isInteger(id) || id <= 0) {
+          return sendJson(res, 400, { error: 'Invalid post id.' });
+        }
+
+        const single = await client.query(
+          `
+            SELECT id, nickname, letter, read_count, created_at
+            FROM letters
+            WHERE id = $1
+            LIMIT 1
+          `,
+          [id]
+        );
+
+        if (!single.rows.length) {
+          return sendJson(res, 404, { error: 'Post not found.' });
+        }
+
+        return sendJson(res, 200, { post: single.rows[0] });
+      }
+
+      if (viewRaw === 'activity') {
+        const currentUtcDate = new Date();
+        const requestedYear = Number(req.query?.year);
+        const requestedMonth = Number(req.query?.month);
+
+        const yearsResult = await client.query(
+          `
+            SELECT DISTINCT EXTRACT(YEAR FROM created_at)::INT AS year
+            FROM letters
+            ORDER BY year DESC
+            LIMIT 30
+          `
+        );
+
+        const years = yearsResult.rows.map((row) => Number(row.year)).filter((year) => Number.isInteger(year));
+
+        const fallbackYear = years.length ? years[0] : currentUtcDate.getUTCFullYear();
+        const selectedYear = Number.isInteger(requestedYear) && requestedYear >= 1970 && requestedYear <= 2200
+          ? requestedYear
+          : fallbackYear;
+
+        const monthsResult = await client.query(
+          `
+            SELECT DISTINCT EXTRACT(MONTH FROM created_at)::INT AS month
+            FROM letters
+            WHERE EXTRACT(YEAR FROM created_at) = $1
+            ORDER BY month ASC
+          `,
+          [selectedYear]
+        );
+
+        const months = monthsResult.rows
+          .map((row) => Number(row.month))
+          .filter((month) => Number.isInteger(month) && month >= 1 && month <= 12);
+
+        const fallbackMonth = months.length ? months[months.length - 1] : currentUtcDate.getUTCMonth() + 1;
+        const selectedMonth = Number.isInteger(requestedMonth) && requestedMonth >= 1 && requestedMonth <= 12
+          ? requestedMonth
+          : fallbackMonth;
+
+        const daysResult = await client.query(
+          `
+            SELECT TO_CHAR(created_at::DATE, 'YYYY-MM-DD') AS day, COUNT(*)::INT AS count
+            FROM letters
+            WHERE EXTRACT(YEAR FROM created_at) = $1
+              AND EXTRACT(MONTH FROM created_at) = $2
+            GROUP BY created_at::DATE
+            ORDER BY created_at::DATE ASC
+          `,
+          [selectedYear, selectedMonth]
+        );
+
+        const monthTotalResult = await client.query(
+          `
+            SELECT COUNT(*)::INT AS total
+            FROM letters
+            WHERE EXTRACT(YEAR FROM created_at) = $1
+              AND EXTRACT(MONTH FROM created_at) = $2
+          `,
+          [selectedYear, selectedMonth]
+        );
+
+        return sendJson(res, 200, {
+          years,
+          months,
+          selectedYear,
+          selectedMonth,
+          days: daysResult.rows,
+          monthTotal: Number(monthTotalResult.rows[0]?.total || 0),
+        });
+      }
+
       const queryParts = [];
       const values = [];
 
