@@ -271,7 +271,7 @@ function renderPosts(posts) {
 
     if (hasReadInThisTab(post.id)) {
       readButton.disabled = true;
-      readButton.textContent = 'Read in this tab';
+      readButton.textContent = 'read';
     }
 
     postsRoot.append(clone);
@@ -777,7 +777,7 @@ postsRoot.addEventListener('click', async (event) => {
   if (hasReadInThisTab(postId)) {
     setStatus('You already read this letter in this tab. Open a new tab to count another read.');
     target.disabled = true;
-    target.textContent = 'Read in this tab';
+    target.textContent = 'read';
     return;
   }
 
@@ -797,7 +797,7 @@ postsRoot.addEventListener('click', async (event) => {
 
     markReadInThisTab(postId);
     target.disabled = true;
-    target.textContent = 'Read in this tab';
+    target.textContent = 'read';
 
     setTodayReads(next.todayReads);
 
