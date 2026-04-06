@@ -1,0 +1,13 @@
+{
+  "name": "lonelies-social",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Anonymous retro letter archive",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "pg": "^8.12.0"
+  }
+}

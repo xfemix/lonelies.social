@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://loneliessocial.vercel.app/sitemap.xml

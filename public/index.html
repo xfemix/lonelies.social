@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>lonelies.social | Anonymous Letter Archive</title>
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+    <meta
+      name="description"
+      content="An anonymous retro space where lonely people share short and long letters. No login, optional nickname, permanent archive."
+    />
+    <meta name="keywords" content="anonymous letters, lonely people, retro social site, private writing, letter archive" />
+    <link rel="canonical" href="https://loneliessocial.vercel.app/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="lonelies.social" />
+    <meta property="og:title" content="lonelies.social | Anonymous Letter Archive" />
+    <meta
+      property="og:description"
+      content="Leave a letter, read the archive, and stay anonymous."
+    />
+    <meta property="og:url" content="https://loneliessocial.vercel.app/" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="lonelies.social | Anonymous Letter Archive" />
+    <meta name="twitter:description" content="Leave a letter, read the archive, and stay anonymous." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "lonelies.social",
+        "url": "https://loneliessocial.vercel.app/",
+        "description": "Anonymous retro letter archive with no login and optional nickname.",
+        "inLanguage": "en"
+      }
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <header class="hero">
+      <p class="badge">NO LOGIN · NO TRACKERS · ANONYMOUS</p>
+      <h1>lonelies.social</h1>
+      <p class="tagline">
+        Drop a letter. No one knows it was you.
+      </p>
+    </header>
+
+    <main class="layout">
+      <section class="panel writer" aria-labelledby="write-title">
+        <h2 id="write-title">Write a letter</h2>
+        <form id="letter-form" novalidate>
+          <label for="nickname">Name or nickname (leave it blank if you want)</label>
+          <input
+            id="nickname"
+            name="nickname"
+            type="text"
+            maxlength="40"
+            placeholder="nobody, ghost, your actual name, whatever"
+            autocomplete="off"
+          />
+
+          <label for="letter">Your letter</label>
+          <textarea
+            id="letter"
+            name="letter"
+            maxlength="10000"
+            placeholder="Say the thing you've been sitting on..."
+            required
+          ></textarea>
+
+          <div class="form-footer">
+            <button type="submit">Drop it in</button>
+            <p id="form-status" class="status" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel archive" aria-labelledby="archive-title">
+        <div class="archive-head">
+          <h2 id="archive-title">The pile</h2>
+          <button id="refresh" type="button">Refresh</button>
+        </div>
+        <div class="filters" aria-label="Archive filters">
+          <label for="search">Search</label>
+          <input id="search" type="search" placeholder="a word, a name, a feeling..." />
+
+          <label for="from-date">From</label>
+          <input id="from-date" type="date" />
+
+          <label for="to-date">To</label>
+          <input id="to-date" type="date" />
+
+          <label for="sort">Sort</label>
+          <select id="sort">
+            <option value="desc">Newest first</option>
+            <option value="asc">Oldest first</option>
+          </select>
+
+          <button id="apply-filters" type="button">Apply</button>
+          <button id="clear-filters" type="button">Clear</button>
+        </div>
+        <p class="archive-note">
+          Close the tab and you're gone. The letters aren't.
+        </p>
+        <div id="posts" class="posts" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <template id="post-template">
+      <article class="post">
+        <div class="post-meta">
+          <span class="post-name"></span>
+          <span class="post-right">
+            <time class="post-date"></time>
+            <button class="read-button" type="button">Read +1</button>
+            <button class="share-button" type="button">Share</button>
+            <span class="post-reads"></span>
+          </span>
+        </div>
+        <p class="post-letter"></p>
+      </article>
+    </template>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
