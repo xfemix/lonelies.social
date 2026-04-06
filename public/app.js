@@ -35,6 +35,7 @@ const modalLetterNode = document.getElementById('modal-letter');
 
 const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters, Archive, and Search';
 const PAGE_SIZE = 30;
+const TAB_READ_PREFIX = 'lonelies-read-';
 let latestPosts = [];
 let currentPage = 1;
 let totalPages = 1;
@@ -118,6 +119,22 @@ function setArchiveToolsCollapsed(collapsed) {
   archiveTools.classList.toggle('collapsed', collapsed);
   toggleArchiveToolsButton.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
   toggleArchiveToolsButton.textContent = 'Filter';
+}
+
+function hasReadInThisTab(postId) {
+  try {
+    return window.sessionStorage.getItem(`${TAB_READ_PREFIX}${postId}`) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markReadInThisTab(postId) {
+  try {
+    window.sessionStorage.setItem(`${TAB_READ_PREFIX}${postId}`, '1');
+  } catch {
+    // Ignore storage failures and continue.
+  }
 }
 
 function syncArchiveToolsForViewport() {
@@ -220,6 +237,11 @@ function renderPosts(posts) {
     shareButton.dataset.name = safeName;
     shareButton.dataset.letter = post.letter;
     shareButton.dataset.createdAt = post.created_at;
+
+    if (hasReadInThisTab(post.id)) {
+      readButton.disabled = true;
+      readButton.textContent = 'Read in this tab';
+    }
 
     postsRoot.append(clone);
   }
@@ -693,19 +715,30 @@ postsRoot.addEventListener('click', async (event) => {
     return;
   }
 
+  if (hasReadInThisTab(postId)) {
+    setStatus('You already read this letter in this tab. Open a new tab to count another read.');
+    target.disabled = true;
+    target.textContent = 'Read in this tab';
+    return;
+  }
+
   const originalText = target.textContent;
   target.disabled = true;
   target.textContent = 'Counting...';
 
   try {
     const next = await incrementRead(postId);
-    const readsNode = target.parentElement && target.parentElement.querySelector('.post-reads');
+    const readsNode = postElement.querySelector('.post-reads');
     if (readsNode) {
       readsNode.textContent = formatReadsLabel(next.readCount);
       readsNode.classList.remove('pulse');
       void readsNode.offsetWidth;
       readsNode.classList.add('pulse');
     }
+
+    markReadInThisTab(postId);
+    target.disabled = true;
+    target.textContent = 'Read in this tab';
 
     setTodayReads(next.todayReads);
 
@@ -720,8 +753,10 @@ postsRoot.addEventListener('click', async (event) => {
   } catch (error) {
     setStatus(error.message || 'Could not update read count.', true);
   } finally {
-    target.disabled = false;
-    target.textContent = originalText;
+    if (!hasReadInThisTab(postId)) {
+      target.disabled = false;
+      target.textContent = originalText;
+    }
   }
 
   return;
@@ -761,8 +796,3 @@ updatePaginationUi();
 syncArchiveToolsForViewport();
 loadPosts().then(openSharedPostFromServer);
 loadActivity();
-
-window.setInterval(() => {
-  const selection = currentActivitySelection();
-  loadActivity(selection.year, selection.month);
-}, 60000);
