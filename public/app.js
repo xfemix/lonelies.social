@@ -18,9 +18,15 @@ const clearMonthFilterButton = document.getElementById('clear-month-filter');
 const calendarGrid = document.getElementById('calendar-grid');
 const calendarSummary = document.getElementById('calendar-summary');
 const totalLettersNode = document.getElementById('total-letters');
+const prevPageButton = document.getElementById('prev-page');
+const nextPageButton = document.getElementById('next-page');
+const pageInfoNode = document.getElementById('page-info');
 
 const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters, Archive, and Search';
+const PAGE_SIZE = 30;
 let latestPosts = [];
+let currentPage = 1;
+let totalPages = 1;
 
 const monthNames = [
   'January',
@@ -50,6 +56,18 @@ function setTotalLetters(count) {
   if (!totalLettersNode) return;
   const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
   totalLettersNode.textContent = String(safeCount);
+}
+
+function updatePaginationUi() {
+  if (pageInfoNode) pageInfoNode.textContent = `Page ${currentPage} of ${totalPages}`;
+  if (prevPageButton) prevPageButton.disabled = currentPage <= 1;
+  if (nextPageButton) nextPageButton.disabled = currentPage >= totalPages;
+}
+
+function resetPagination() {
+  currentPage = 1;
+  totalPages = 1;
+  updatePaginationUi();
 }
 
 function formatDate(isoString) {
@@ -165,6 +183,8 @@ function buildQueryString() {
   if (fromDate) params.set('from', fromDate);
   if (toDate) params.set('to', toDate);
   if (sort === 'asc') params.set('sort', 'asc');
+  params.set('page', String(currentPage));
+  params.set('pageSize', String(PAGE_SIZE));
 
   const query = params.toString();
   return query ? `?${query}` : '';
@@ -180,9 +200,17 @@ async function loadPosts() {
     }
 
     setTotalLetters(data.totalLetters);
+    const pagination = data.pagination || {};
+    const nextPage = Number(pagination.page);
+    const nextTotalPages = Number(pagination.totalPages);
+    currentPage = Number.isInteger(nextPage) && nextPage > 0 ? nextPage : 1;
+    totalPages = Number.isInteger(nextTotalPages) && nextTotalPages > 0 ? nextTotalPages : 1;
+    updatePaginationUi();
     renderPosts(data.posts || []);
   } catch (error) {
     setTotalLetters(0);
+    totalPages = 1;
+    updatePaginationUi();
     renderPosts([]);
     setStatus(error.message || 'Could not load posts.', true);
   }
@@ -339,6 +367,7 @@ function applyMonthFilter() {
 
   fromDateInput.value = first;
   toDateInput.value = last;
+  resetPagination();
   loadPosts();
 }
 
@@ -386,6 +415,7 @@ async function submitLetter(event) {
     setStatus('Posted. Your letter is now part of the archive.');
     nicknameInput.value = '';
     letterInput.value = '';
+    resetPagination();
     await loadPosts();
     const selection = currentActivitySelection();
     await loadActivity(selection.year, selection.month);
@@ -464,6 +494,7 @@ refreshButton.addEventListener('click', () => {
 });
 
 applyFiltersButton.addEventListener('click', () => {
+  resetPagination();
   loadPosts();
 });
 
@@ -472,6 +503,7 @@ clearFiltersButton.addEventListener('click', () => {
   fromDateInput.value = '';
   toDateInput.value = '';
   sortSelect.value = 'desc';
+  resetPagination();
   loadPosts();
 });
 
@@ -488,6 +520,7 @@ monthFilterButton.addEventListener('click', applyMonthFilter);
 clearMonthFilterButton.addEventListener('click', () => {
   fromDateInput.value = '';
   toDateInput.value = '';
+  resetPagination();
   loadPosts();
   const selection = currentActivitySelection();
   loadActivity(selection.year, selection.month);
@@ -500,8 +533,27 @@ calendarGrid.addEventListener('click', (event) => {
   if (!dateValue || target.disabled) return;
   fromDateInput.value = dateValue;
   toDateInput.value = dateValue;
+  resetPagination();
   loadPosts();
 });
+
+if (prevPageButton) {
+  prevPageButton.addEventListener('click', () => {
+    if (currentPage <= 1) return;
+    currentPage -= 1;
+    updatePaginationUi();
+    loadPosts();
+  });
+}
+
+if (nextPageButton) {
+  nextPageButton.addEventListener('click', () => {
+    if (currentPage >= totalPages) return;
+    currentPage += 1;
+    updatePaginationUi();
+    loadPosts();
+  });
+}
 
 postsRoot.addEventListener('click', async (event) => {
   const target = event.target;
@@ -548,10 +600,12 @@ window.addEventListener('beforeunload', (event) => {
 searchInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();
+    resetPagination();
     loadPosts();
   }
 });
 
+updatePaginationUi();
 loadPosts().then(ensureSharedTitleFromServer);
 loadActivity();
 

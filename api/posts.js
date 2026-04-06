@@ -243,11 +243,17 @@ module.exports = async function handler(req, res) {
       const fromRaw = typeof req.query?.from === 'string' ? req.query.from.trim() : '';
       const toRaw = typeof req.query?.to === 'string' ? req.query.to.trim() : '';
       const sortRaw = typeof req.query?.sort === 'string' ? req.query.sort.toLowerCase() : 'desc';
+      const pageRaw = Number(req.query?.page);
+      const pageSizeRaw = Number(req.query?.pageSize);
 
       const search = searchRaw.slice(0, 120);
       const fromDate = coerceDateRange(fromRaw, false);
       const toDate = coerceDateRange(toRaw, true);
       const sort = sortRaw === 'asc' ? 'ASC' : 'DESC';
+      const page = Number.isInteger(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+      const pageSize = Number.isInteger(pageSizeRaw) && pageSizeRaw > 0
+        ? Math.min(pageSizeRaw, 100)
+        : 30;
 
       if (search) {
         values.push(`%${search}%`);
@@ -265,21 +271,48 @@ module.exports = async function handler(req, res) {
       }
 
       const whereClause = queryParts.length ? `WHERE ${queryParts.join(' AND ')}` : '';
+      const filteredCountResult = await client.query(
+        `
+          SELECT COUNT(*)::INT AS total
+          FROM letters
+          ${whereClause}
+        `,
+        values
+      );
+
+      const totalItems = Number(filteredCountResult.rows[0]?.total || 0);
+      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+      const safePage = Math.min(page, totalPages);
+      const offset = (safePage - 1) * pageSize;
+
+      const pagedValues = [...values, pageSize, offset];
       const result = await client.query(
         `
           SELECT id, nickname, letter, read_count, created_at
           FROM letters
           ${whereClause}
           ORDER BY created_at ${sort}
-          LIMIT 200
+          LIMIT $${values.length + 1}
+          OFFSET $${values.length + 2}
         `,
-        values
+        pagedValues
       );
 
       const totalCountResult = await client.query('SELECT COUNT(*)::INT AS total FROM letters');
       const totalLetters = Number(totalCountResult.rows[0]?.total || 0);
 
-      return sendJson(res, 200, { posts: result.rows, totalLetters });
+      return sendJson(res, 200, {
+        posts: result.rows,
+        totalLetters,
+        pagination: {
+          page: safePage,
+          pageSize,
+          totalItems,
+          totalPages,
+          hasPrev: safePage > 1,
+          hasNext: safePage < totalPages,
+        },
+      });
     }
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};

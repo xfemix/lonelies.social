@@ -227,6 +227,20 @@ button:hover {
   margin-top: 0.8rem;
 }
 
+.pager {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-info {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .calendar-box {
   margin-top: 0.8rem;
   border: 1px dashed rgba(245, 215, 77, 0.35);
@@ -451,6 +465,10 @@ button:hover {
 }
 
 @media (max-width: 600px) {
+  .pager {
+    justify-content: flex-start;
+  }
+
   .post-meta {
     flex-direction: column;
     align-items: flex-start;
