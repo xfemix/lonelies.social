@@ -84,6 +84,31 @@ function isRecentDuplicate(ip, nickname, letter) {
   return false;
 }
 
+async function ensureReadEventsTable(client) {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS letter_reads (
+      id BIGSERIAL PRIMARY KEY,
+      post_id BIGINT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await client.query(`
+    CREATE INDEX IF NOT EXISTS letter_reads_created_at_idx ON letter_reads (created_at DESC);
+  `);
+}
+
+async function getTodayReads(client) {
+  const today = await client.query(
+    `
+      SELECT COUNT(*)::INT AS total
+      FROM letter_reads
+      WHERE created_at >= DATE_TRUNC('day', NOW())
+    `
+  );
+  return Number(today.rows[0]?.total || 0);
+}
+
 function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded.length) {
@@ -180,6 +205,7 @@ module.exports = async function handler(req, res) {
   try {
     client = await getPool().connect();
     await ensureTable(client);
+    await ensureReadEventsTable(client);
 
     if (req.method === 'GET') {
       if (isRateLimited(req, 'fetch', FETCH_LIMIT_PER_WINDOW)) {
@@ -376,10 +402,12 @@ module.exports = async function handler(req, res) {
 
       const totalCountResult = await client.query('SELECT COUNT(*)::INT AS total FROM letters');
       const totalLetters = Number(totalCountResult.rows[0]?.total || 0);
+      const todayReads = await getTodayReads(client);
 
       return sendJson(res, 200, {
         posts: result.rows,
         totalLetters,
+        todayReads,
         pagination: {
           page: safePage,
           pageSize,
@@ -417,9 +445,20 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 404, { error: 'Post not found.' });
       }
 
+      await client.query(
+        `
+          INSERT INTO letter_reads (post_id)
+          VALUES ($1)
+        `,
+        [id]
+      );
+
+      const todayReads = await getTodayReads(client);
+
       return sendJson(res, 200, {
         id: update.rows[0].id,
         read_count: Number(update.rows[0].read_count),
+        todayReads,
       });
     }
 

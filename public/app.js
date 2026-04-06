@@ -19,17 +19,27 @@ const clearMonthFilterButton = document.getElementById('clear-month-filter');
 const calendarGrid = document.getElementById('calendar-grid');
 const calendarSummary = document.getElementById('calendar-summary');
 const totalLettersNode = document.getElementById('total-letters');
+const todayReadsNode = document.getElementById('today-reads');
 const prevPageButton = document.getElementById('prev-page');
 const nextPageButton = document.getElementById('next-page');
 const pageInfoNode = document.getElementById('page-info');
 const archiveTools = document.getElementById('archive-tools');
 const toggleArchiveToolsButton = document.getElementById('toggle-archive-tools');
+const letterModal = document.getElementById('letter-modal');
+const closeLetterModalButton = document.getElementById('close-letter-modal');
+const modalBackButton = document.getElementById('modal-back');
+const modalShareButton = document.getElementById('modal-share');
+const modalMetaNode = document.getElementById('modal-meta');
+const modalReadsNode = document.getElementById('modal-reads');
+const modalLetterNode = document.getElementById('modal-letter');
 
 const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters, Archive, and Search';
 const PAGE_SIZE = 30;
 let latestPosts = [];
 let currentPage = 1;
 let totalPages = 1;
+let todayReadsCount = 0;
+let activeModalPost = null;
 
 const monthNames = [
   'January',
@@ -59,6 +69,36 @@ function setTotalLetters(count) {
   if (!totalLettersNode) return;
   const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
   totalLettersNode.textContent = String(safeCount);
+}
+
+function formatReadsLabel(count) {
+  const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
+  return `${safeCount} ${safeCount === 1 ? 'person' : 'people'} read this`;
+}
+
+function setTodayReads(count) {
+  if (!todayReadsNode) return;
+  todayReadsCount = Number.isFinite(Number(count)) ? Number(count) : 0;
+  todayReadsNode.textContent = String(todayReadsCount);
+}
+
+function setModalOpen(isOpen) {
+  if (!letterModal) return;
+  letterModal.hidden = !isOpen;
+}
+
+function closeLetterModal() {
+  activeModalPost = null;
+  setModalOpen(false);
+}
+
+function openLetterModal(post) {
+  if (!post || !modalMetaNode || !modalReadsNode || !modalLetterNode) return;
+  activeModalPost = post;
+  modalMetaNode.textContent = `${post.nickname || 'anonymous'} · ${formatDate(post.created_at)}`;
+  modalReadsNode.textContent = formatReadsLabel(post.read_count || 0);
+  modalLetterNode.textContent = post.letter || '';
+  setModalOpen(true);
 }
 
 function updatePaginationUi() {
@@ -169,11 +209,12 @@ function renderPosts(posts) {
     const safeName = post.nickname || 'anonymous';
 
     postNode.id = `post-${post.id}`;
+    postNode.dataset.post = JSON.stringify(post);
 
     clone.querySelector('.post-name').textContent = safeName;
     clone.querySelector('.post-date').textContent = formatDate(post.created_at);
     clone.querySelector('.post-letter').textContent = post.letter;
-    readNode.textContent = `${post.read_count || 0} reads`;
+    readNode.textContent = formatReadsLabel(post.read_count || 0);
     readButton.dataset.id = String(post.id);
     shareButton.dataset.id = String(post.id);
     shareButton.dataset.name = safeName;
@@ -215,6 +256,7 @@ async function loadPosts() {
     }
 
     setTotalLetters(data.totalLetters);
+    setTodayReads(data.todayReads);
     const pagination = data.pagination || {};
     const nextPage = Number(pagination.page);
     const nextTotalPages = Number(pagination.totalPages);
@@ -224,6 +266,7 @@ async function loadPosts() {
     renderPosts(data.posts || []);
   } catch (error) {
     setTotalLetters(0);
+    setTodayReads(0);
     totalPages = 1;
     updatePaginationUi();
     renderPosts([]);
@@ -386,18 +429,24 @@ function applyMonthFilter() {
   loadPosts();
 }
 
-async function ensureSharedTitleFromServer() {
+async function openSharedPostFromServer() {
   const params = new URLSearchParams(window.location.search);
   const requestedPost = Number(params.get('post'));
   if (!Number.isInteger(requestedPost) || requestedPost <= 0) return;
 
-  if (latestPosts.some((post) => Number(post.id) === requestedPost)) return;
+  const existing = latestPosts.find((post) => Number(post.id) === requestedPost);
+  if (existing) {
+    document.title = titleForPost(existing);
+    openLetterModal(existing);
+    return;
+  }
 
   try {
     const response = await fetch(`/api/posts?id=${requestedPost}`);
     const data = await response.json();
     if (!response.ok || !data.post) return;
     document.title = titleForPost(data.post);
+    openLetterModal(data.post);
   } catch {
     // Keep default title if single post lookup fails.
   }
@@ -454,16 +503,19 @@ async function incrementRead(postId) {
     throw new Error(data.error || 'Could not update read count.');
   }
 
-  return data.read_count;
+  return {
+    readCount: data.read_count,
+    todayReads: data.todayReads,
+  };
 }
 
-async function sharePost(button) {
-  const postId = Number(button.dataset.id);
+async function sharePostData(post) {
+  const postId = Number(post.id);
   if (!Number.isInteger(postId) || postId <= 0) return;
 
-  const name = button.dataset.name || 'anonymous';
-  const letter = button.dataset.letter || '';
-  const createdAt = button.dataset.createdAt || '';
+  const name = post.nickname || 'anonymous';
+  const letter = post.letter || '';
+  const createdAt = post.created_at || '';
   const snippet = letter.trim().slice(0, 120);
   const url = postShareUrl(postId);
   const shareTitle = createdAt
@@ -494,6 +546,18 @@ async function sharePost(button) {
     if (error?.name === 'AbortError') return;
     setStatus('Could not share this post right now.', true);
   }
+}
+
+async function sharePost(button) {
+  const postId = Number(button.dataset.id);
+  if (!Number.isInteger(postId) || postId <= 0) return;
+
+  await sharePostData({
+    id: postId,
+    nickname: button.dataset.name || 'anonymous',
+    letter: button.dataset.letter || '',
+    created_at: button.dataset.createdAt || '',
+  });
 }
 
 form.addEventListener('submit', submitLetter);
@@ -579,11 +643,41 @@ if (toggleArchiveToolsButton) {
   });
 }
 
+if (closeLetterModalButton) {
+  closeLetterModalButton.addEventListener('click', closeLetterModal);
+}
+
+if (modalBackButton) {
+  modalBackButton.addEventListener('click', closeLetterModal);
+}
+
+if (modalShareButton) {
+  modalShareButton.addEventListener('click', async () => {
+    if (!activeModalPost) return;
+    await sharePostData(activeModalPost);
+  });
+}
+
+if (letterModal) {
+  letterModal.addEventListener('click', (event) => {
+    if (event.target === letterModal) closeLetterModal();
+  });
+}
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && letterModal && !letterModal.hidden) {
+    closeLetterModal();
+  }
+});
+
 postsRoot.addEventListener('click', async (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) {
     return;
   }
+
+  const postElement = target.closest('.post');
+  if (!postElement) return;
 
   if (target.classList.contains('share-button')) {
     await sharePost(target);
@@ -604,14 +698,48 @@ postsRoot.addEventListener('click', async (event) => {
   target.textContent = 'Counting...';
 
   try {
-    const nextReadCount = await incrementRead(postId);
+    const next = await incrementRead(postId);
     const readsNode = target.parentElement && target.parentElement.querySelector('.post-reads');
-    if (readsNode) readsNode.textContent = `${nextReadCount} reads`;
+    if (readsNode) {
+      readsNode.textContent = formatReadsLabel(next.readCount);
+      readsNode.classList.remove('pulse');
+      void readsNode.offsetWidth;
+      readsNode.classList.add('pulse');
+    }
+
+    setTodayReads(next.todayReads);
+
+    const postPayload = postElement.dataset.post ? JSON.parse(postElement.dataset.post) : null;
+    if (postPayload) {
+      postPayload.read_count = next.readCount;
+      postElement.dataset.post = JSON.stringify(postPayload);
+      if (activeModalPost && Number(activeModalPost.id) === postId) {
+        openLetterModal(postPayload);
+      }
+    }
   } catch (error) {
     setStatus(error.message || 'Could not update read count.', true);
   } finally {
     target.disabled = false;
     target.textContent = originalText;
+  }
+
+  return;
+});
+
+postsRoot.addEventListener('click', (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target.closest('.read-button') || target.closest('.share-button')) return;
+
+  const postElement = target.closest('.post');
+  if (!postElement || !postElement.dataset.post) return;
+
+  try {
+    const post = JSON.parse(postElement.dataset.post);
+    openLetterModal(post);
+  } catch {
+    // Ignore malformed payload
   }
 });
 
@@ -631,7 +759,7 @@ searchInput.addEventListener('keydown', (event) => {
 
 updatePaginationUi();
 syncArchiveToolsForViewport();
-loadPosts().then(ensureSharedTitleFromServer);
+loadPosts().then(openSharedPostFromServer);
 loadActivity();
 
 window.setInterval(() => {

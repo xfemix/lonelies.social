@@ -89,6 +89,16 @@ h1 {
   color: var(--ink);
 }
 
+.today-reads-banner {
+  margin: 0.35rem 0 0;
+  color: var(--neon);
+  font-size: 0.95rem;
+}
+
+.today-reads-banner strong {
+  color: var(--ink);
+}
+
 .layout {
   max-width: 1100px;
   margin: 0 auto;
@@ -136,6 +146,56 @@ h1 {
   text-align: center;
   border-top: 1px dashed rgba(245, 215, 77, 0.3);
   padding-top: 0.6rem;
+}
+
+.letter-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.68);
+  display: grid;
+  place-items: center;
+  z-index: 40;
+  padding: 1rem;
+}
+
+.letter-modal-card {
+  width: min(720px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  background: rgba(8, 13, 25, 0.96);
+  padding: 1rem;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+}
+
+.close-modal {
+  margin-left: auto;
+  display: block;
+}
+
+.modal-meta {
+  color: var(--muted);
+  margin: 0.3rem 0;
+}
+
+.modal-reads {
+  margin: 0 0 0.6rem;
+  color: var(--neon);
+  font-weight: 700;
+}
+
+.modal-letter {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+}
+
+.modal-actions {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .writer label {
@@ -388,6 +448,7 @@ button:hover {
   transform: translateY(6px);
   opacity: 0;
   animation: rise-in 0.5s ease forwards;
+  cursor: pointer;
 }
 
 .post.targeted {
@@ -437,7 +498,14 @@ button:hover {
 }
 
 .post-reads {
+  margin: 0.55rem 0 0;
   color: var(--neon);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.post-reads.pulse {
+  animation: read-pulse 0.5s ease;
 }
 
 .post-letter {
@@ -471,6 +539,18 @@ button:hover {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes read-pulse {
+  0% {
+    text-shadow: 0 0 0 rgba(245, 215, 77, 0);
+  }
+  45% {
+    text-shadow: 0 0 10px rgba(245, 215, 77, 0.65);
+  }
+  100% {
+    text-shadow: 0 0 0 rgba(245, 215, 77, 0);
   }
 }
 
