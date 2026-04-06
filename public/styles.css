@@ -202,6 +202,74 @@ h1 {
   gap: 0.5rem;
 }
 
+.share-feedback-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.58);
+  display: grid;
+  place-items: center;
+  z-index: 45;
+  padding: 1rem;
+}
+
+.share-feedback-modal[hidden] {
+  display: none;
+}
+
+.share-feedback-card {
+  width: min(460px, 100%);
+  border: 1px solid var(--line);
+  background: rgba(8, 13, 25, 0.97);
+  padding: 1rem;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+}
+
+.share-feedback-text {
+  margin: 0.35rem 0 0.85rem;
+  color: var(--muted);
+}
+
+.share-channels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.share-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--line);
+  padding: 0.55rem;
+  text-decoration: none;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.share-channel:hover {
+  filter: brightness(1.1);
+}
+
+.share-logo {
+  width: 1.35rem;
+  height: 1.35rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.share-logo-x {
+  background: #111111;
+  color: #ffffff;
+}
+
+.share-logo-reddit {
+  background: #ff4500;
+  color: #ffffff;
+}
+
 .writer label {
   display: block;
   margin-top: 0.6rem;
@@ -594,6 +662,10 @@ button:hover {
 }
 
 @media (max-width: 600px) {
+  .share-channels {
+    grid-template-columns: 1fr;
+  }
+
   .pager {
     justify-content: flex-start;
   }

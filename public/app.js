@@ -32,6 +32,11 @@ const modalShareButton = document.getElementById('modal-share');
 const modalMetaNode = document.getElementById('modal-meta');
 const modalReadsNode = document.getElementById('modal-reads');
 const modalLetterNode = document.getElementById('modal-letter');
+const shareFeedbackModal = document.getElementById('share-feedback-modal');
+const closeShareFeedbackButton = document.getElementById('close-share-feedback');
+const shareFeedbackText = document.getElementById('share-feedback-text');
+const shareXLink = document.getElementById('share-x');
+const shareRedditLink = document.getElementById('share-reddit');
 
 const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters, Archive, and Search';
 const PAGE_SIZE = 30;
@@ -91,6 +96,32 @@ function setModalOpen(isOpen) {
 function closeLetterModal() {
   activeModalPost = null;
   setModalOpen(false);
+}
+
+function closeShareFeedbackModal() {
+  if (!shareFeedbackModal) return;
+  shareFeedbackModal.hidden = true;
+}
+
+function openShareFeedbackModal({ url, title, text, message }) {
+  if (!shareFeedbackModal) return;
+
+  if (shareFeedbackText) {
+    shareFeedbackText.textContent = message || 'Link copied to clipboard.';
+  }
+
+  const encodedUrl = encodeURIComponent(url);
+  const encodedText = encodeURIComponent(text || title || 'lonelies.social letter');
+
+  if (shareXLink) {
+    shareXLink.href = `https://x.com/intent/post?url=${encodedUrl}&text=${encodedText}`;
+  }
+
+  if (shareRedditLink) {
+    shareRedditLink.href = `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodeURIComponent(title || 'lonelies.social letter')}`;
+  }
+
+  shareFeedbackModal.hidden = false;
 }
 
 function openLetterModal(post) {
@@ -549,21 +580,34 @@ async function sharePostData(post) {
     url,
   };
 
+  const feedbackData = {
+    url,
+    title: shareTitle,
+    text: sharePayload.text,
+    message: 'Link copied to clipboard.',
+  };
+
   try {
     if (navigator.share) {
       await navigator.share(sharePayload);
-      setStatus('Shared.');
+      openShareFeedbackModal({
+        ...feedbackData,
+        message: 'Shared. You can also share to X or Reddit.',
+      });
       return;
     }
 
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(url);
-      setStatus('Link copied to clipboard.');
+      openShareFeedbackModal(feedbackData);
       return;
     }
 
-    const accepted = window.prompt('Copy this link:', url);
-    if (accepted !== null) setStatus('Link ready to copy.');
+    window.prompt('Copy this link:', url);
+    openShareFeedbackModal({
+      ...feedbackData,
+      message: 'Link ready to copy. You can also share to X or Reddit.',
+    });
   } catch (error) {
     if (error?.name === 'AbortError') return;
     setStatus('Could not share this post right now.', true);
@@ -686,9 +730,24 @@ if (letterModal) {
   });
 }
 
+if (closeShareFeedbackButton) {
+  closeShareFeedbackButton.addEventListener('click', closeShareFeedbackModal);
+}
+
+if (shareFeedbackModal) {
+  shareFeedbackModal.addEventListener('click', (event) => {
+    if (event.target === shareFeedbackModal) closeShareFeedbackModal();
+  });
+}
+
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && letterModal && !letterModal.hidden) {
     closeLetterModal();
+    return;
+  }
+
+  if (event.key === 'Escape' && shareFeedbackModal && !shareFeedbackModal.hidden) {
+    closeShareFeedbackModal();
   }
 });
 
