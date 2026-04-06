@@ -76,7 +76,7 @@ function setArchiveToolsCollapsed(collapsed) {
   if (!archiveTools || !toggleArchiveToolsButton) return;
   archiveTools.classList.toggle('collapsed', collapsed);
   toggleArchiveToolsButton.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-  toggleArchiveToolsButton.textContent = collapsed ? 'Show Filters & Calendar' : 'Hide Filters & Calendar';
+  toggleArchiveToolsButton.textContent = 'Filter';
 }
 
 function syncArchiveToolsForViewport() {
@@ -191,7 +191,7 @@ function buildQueryString() {
   const search = searchInput.value.trim();
   const fromDate = fromDateInput.value;
   const toDate = toDateInput.value;
-  const sort = sortSelect.value;
+  const sort = sortSelect ? sortSelect.value : 'desc';
 
   if (search) params.set('search', search);
   if (fromDate) params.set('from', fromDate);
@@ -516,7 +516,7 @@ clearFiltersButton.addEventListener('click', () => {
   searchInput.value = '';
   fromDateInput.value = '';
   toDateInput.value = '';
-  sortSelect.value = 'desc';
+  if (sortSelect) sortSelect.value = 'desc';
   resetPagination();
   loadPosts();
 });
@@ -570,7 +570,8 @@ if (nextPageButton) {
 }
 
 if (toggleArchiveToolsButton) {
-  toggleArchiveToolsButton.addEventListener('click', () => {
+  toggleArchiveToolsButton.addEventListener('click', (event) => {
+    event.preventDefault();
     const currentlyCollapsed = archiveTools?.classList.contains('collapsed');
     setArchiveToolsCollapsed(!currentlyCollapsed);
   });
@@ -630,8 +631,6 @@ updatePaginationUi();
 syncArchiveToolsForViewport();
 loadPosts().then(ensureSharedTitleFromServer);
 loadActivity();
-
-window.addEventListener('resize', syncArchiveToolsForViewport);
 
 window.setInterval(() => {
   const selection = currentActivitySelection();
