@@ -1,66 +1,119 @@
 # lonelies.social
-official repo for lonelies.social
 
-Anonymous retro letter archive for lonely people.
+> Drop a letter. No one knows it was you.
 
-## What it does
+An anonymous letter archive for lonely people. Write what you've been sitting on. Read what others left behind. No login, no trackers, no identity.
 
-- No accounts and no login.
-- Optional nickname, or post as anonymous.
-- Long and short letters supported.
-- Letters are stored permanently in Postgres.
-- Read count increases when visitors click `Read +1` on a letter.
-- Archive includes search plus date range filtering.
-- Browser state is not persisted by this app (no localStorage, no cookies).
-- Warns users before leaving/reloading with unsent draft text.
+---
 
-## Stack
+## What It Is
 
-- Static frontend: `public/index.html`, `public/styles.css`, `public/app.js`
-- API endpoint: `api/posts.js` (Vercel Serverless Function)
-- Database: any free Postgres (recommended: Neon free tier or Supabase free tier)
+lonelies.social is a public archive of anonymous letters. Anyone can write one. Anyone can read them. The archive is searchable and browsable by date - you can go back in time and see what people were feeling on any given day.
 
-## Local setup
+It is not a social network. There are no profiles, no followers, no likes. Just letters and the people who wrote them, unnamed.
 
-1. Install dependencies:
+---
 
-   ```bash
-   npm install
-   ```
+## How It Works
 
-2. Create `.env.local` in project root:
+- Write a letter - with a nickname or without one
+- It gets added to the archive immediately
+- Others can read it, search for it, or stumble on it browsing the calendar
+- Close the tab and you're gone. The letter isn't.
 
-   ```bash
-   DATABASE_URL="postgres://USER:PASSWORD@HOST/DATABASE?sslmode=require"
-   ```
+---
 
-3. Run locally:
+## Privacy
 
-   ```bash
-   npm run dev
-   ```
+We don't track you. Here's what that actually means:
 
-4. Open the local URL shown by Vercel dev server.
+- No cookies
+- No analytics (no Google Analytics, no Plausible, nothing)
+- No login or account creation
+- No IP addresses stored in our database
+- No external scripts loading in the browser
 
-## Deploy on Vercel (free)
+The frontend code is open source - you can verify this yourself. Nothing is hidden.
 
-1. Push this folder to GitHub.
-2. Import the repository in Vercel.
-3. In Vercel project settings, add env var `DATABASE_URL`.
-4. Deploy.
+**One honest caveat:** Like every website on the internet, our hosting infrastructure (Vercel) retains standard server logs. We don't control that and we don't access it. If you need genuine untraceability, use a VPN. That's on you, not us.
 
-The `letters` table is created automatically on first API request.
+---
 
-## Privacy notes
+## Tech Stack
 
-- This app does not add analytics, trackers, cookies, or auth.
-- Data still goes through your hosting provider and database provider.
-- If you need stronger legal/privacy guarantees, add a policy page and review provider logs/settings.
+- **Frontend:** Vanilla HTML, CSS, JavaScript - deployed on Vercel
+- **Backend:** Vercel Serverless Functions (API routes)
+- **Database:** Neon (serverless Postgres)
 
-## Security and scraping FAQ
+---
 
-- Database credentials are server-side only: `DATABASE_URL` is used in the Vercel function, not shipped to browser JS.
-- Users cannot read env vars from frontend unless you accidentally expose them as public variables.
-- This app adds basic anti-abuse limits in the API (rate limiting per IP in-memory per server instance).
-- `robots.txt` and `meta robots` are set to discourage indexing/scraping by compliant bots.
-- Important: no public website can fully prevent scraping. For stronger defense, add Cloudflare bot protection and/or CAPTCHA on posting endpoints.
+## Running Locally
+
+```bash
+git clone https://github.com/xfemix/lonelies.social.git
+cd lonelies.social
+```
+
+Create a `.env` file:
+
+```env
+DATABASE_URL=your_neon_connection_string
+```
+
+Install and run:
+
+```bash
+npm install
+vercel dev
+```
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Neon Postgres connection string |
+
+Never commit `.env` to the repo.
+
+---
+
+## Content Policy
+
+lonelies.social is for emotional expression. It is text-only - no images, no links, no media. This is intentional.
+
+We don't moderate tone. People are allowed to be unhinged, sad, angry, raw, and honest. That's the point.
+
+We will remove content that:
+- Targets a specific real person with identifying information
+- Contains content that endangers minors in any way
+
+To report something, contact: [femi.name.ng](https://femi.name.ng)
+
+---
+
+## Contributing
+
+PRs are welcome. If you find a bug or have a feature idea, open an issue.
+
+If you want to contribute but don't know where to start:
+- Improve accessibility
+- Improve mobile layout
+- Suggest moderation tooling
+
+---
+
+## Support
+
+If this archive made you feel less alone, share it with someone who needs it.
+
+---
+
+## License
+
+MIT - do what you want with the code. The letters belong to the people who wrote them.
+
+---
+
+*Built by [femi](https://femi.name.ng)*
