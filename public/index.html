@@ -90,56 +90,63 @@
       <section class="panel archive" aria-labelledby="archive-title">
         <div class="archive-head">
           <h2 id="archive-title">The pile</h2>
-          <button id="refresh" type="button">Refresh</button>
+          <div class="archive-actions">
+            <button id="toggle-archive-tools" type="button" aria-expanded="true" aria-controls="archive-tools">
+              Hide Filters & Calendar
+            </button>
+            <button id="refresh" type="button">Refresh</button>
+          </div>
         </div>
-        <div class="filters" aria-label="Archive filters">
-          <label for="search">Search</label>
-          <input id="search" type="search" placeholder="a word, a name, a feeling..." />
+        <div id="archive-tools" class="archive-tools">
+          <div class="filters" aria-label="Archive filters">
+            <label for="search">Search</label>
+            <input id="search" type="search" placeholder="a word, a name, a feeling..." />
 
-          <label for="from-date">From</label>
-          <input id="from-date" type="date" />
+            <label for="from-date">From</label>
+            <input id="from-date" type="date" />
 
-          <label for="to-date">To</label>
-          <input id="to-date" type="date" />
+            <label for="to-date">To</label>
+            <input id="to-date" type="date" />
 
-          <label for="sort">Sort</label>
-          <select id="sort">
-            <option value="desc">Newest first</option>
-            <option value="asc">Oldest first</option>
-          </select>
+            <label for="sort">Sort</label>
+            <select id="sort">
+              <option value="desc">Newest first</option>
+              <option value="asc">Oldest first</option>
+            </select>
 
-          <button id="apply-filters" type="button">Apply</button>
-          <button id="clear-filters" type="button">Clear</button>
+            <button id="apply-filters" type="button">Apply</button>
+            <button id="clear-filters" type="button">Clear</button>
+          </div>
+          <p class="archive-note">
+            Close the tab and you're gone. The letters aren't.
+          </p>
+          <section class="calendar-box" aria-labelledby="calendar-title">
+            <div class="calendar-head">
+              <h3 id="calendar-title">Archive Calendar</h3>
+              <p id="calendar-summary" class="calendar-summary"></p>
+            </div>
+            <div class="calendar-controls">
+              <label for="year-select">Year</label>
+              <select id="year-select"></select>
+
+              <label for="month-select">Month</label>
+              <select id="month-select"></select>
+
+              <button id="month-filter" type="button">Show Month</button>
+              <button id="clear-month-filter" type="button">Clear Month</button>
+            </div>
+            <div class="calendar-weekdays" aria-hidden="true">
+              <span>Sun</span>
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span>Sat</span>
+            </div>
+            <div id="calendar-grid" class="calendar-grid" role="grid"></div>
+          </section>
         </div>
-        <p class="archive-note">
-          Close the tab and you're gone. The letters aren't.
-        </p>
-        <section class="calendar-box" aria-labelledby="calendar-title">
-          <div class="calendar-head">
-            <h3 id="calendar-title">Archive Calendar</h3>
-            <p id="calendar-summary" class="calendar-summary"></p>
-          </div>
-          <div class="calendar-controls">
-            <label for="year-select">Year</label>
-            <select id="year-select"></select>
-
-            <label for="month-select">Month</label>
-            <select id="month-select"></select>
-
-            <button id="month-filter" type="button">Show Month</button>
-            <button id="clear-month-filter" type="button">Clear Month</button>
-          </div>
-          <div class="calendar-weekdays" aria-hidden="true">
-            <span>Sun</span>
-            <span>Mon</span>
-            <span>Tue</span>
-            <span>Wed</span>
-            <span>Thu</span>
-            <span>Fri</span>
-            <span>Sat</span>
-          </div>
-          <div id="calendar-grid" class="calendar-grid" role="grid"></div>
-        </section>
         <div class="pager" aria-label="Archive pagination">
           <button id="prev-page" type="button">Prev</button>
           <span id="page-info" class="page-info">Page 1 of 1</span>

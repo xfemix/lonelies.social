@@ -21,6 +21,8 @@ const totalLettersNode = document.getElementById('total-letters');
 const prevPageButton = document.getElementById('prev-page');
 const nextPageButton = document.getElementById('next-page');
 const pageInfoNode = document.getElementById('page-info');
+const archiveTools = document.getElementById('archive-tools');
+const toggleArchiveToolsButton = document.getElementById('toggle-archive-tools');
 
 const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters, Archive, and Search';
 const PAGE_SIZE = 30;
@@ -68,6 +70,18 @@ function resetPagination() {
   currentPage = 1;
   totalPages = 1;
   updatePaginationUi();
+}
+
+function setArchiveToolsCollapsed(collapsed) {
+  if (!archiveTools || !toggleArchiveToolsButton) return;
+  archiveTools.classList.toggle('collapsed', collapsed);
+  toggleArchiveToolsButton.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  toggleArchiveToolsButton.textContent = collapsed ? 'Show Filters & Calendar' : 'Hide Filters & Calendar';
+}
+
+function syncArchiveToolsForViewport() {
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  setArchiveToolsCollapsed(isMobile);
 }
 
 function formatDate(isoString) {
@@ -555,6 +569,13 @@ if (nextPageButton) {
   });
 }
 
+if (toggleArchiveToolsButton) {
+  toggleArchiveToolsButton.addEventListener('click', () => {
+    const currentlyCollapsed = archiveTools?.classList.contains('collapsed');
+    setArchiveToolsCollapsed(!currentlyCollapsed);
+  });
+}
+
 postsRoot.addEventListener('click', async (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) {
@@ -606,8 +627,11 @@ searchInput.addEventListener('keydown', (event) => {
 });
 
 updatePaginationUi();
+syncArchiveToolsForViewport();
 loadPosts().then(ensureSharedTitleFromServer);
 loadActivity();
+
+window.addEventListener('resize', syncArchiveToolsForViewport);
 
 window.setInterval(() => {
   const selection = currentActivitySelection();

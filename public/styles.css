@@ -197,6 +197,20 @@ button:hover {
   align-items: center;
 }
 
+.archive-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#toggle-archive-tools {
+  display: none;
+}
+
+.archive-tools.collapsed {
+  display: none;
+}
+
 .archive-note {
   margin-top: 0.15rem;
   color: var(--muted);
@@ -456,6 +470,19 @@ button:hover {
 
   .calendar-controls {
     grid-template-columns: 1fr;
+  }
+
+  #toggle-archive-tools {
+    display: inline-block;
+  }
+
+  .archive-head {
+    align-items: flex-start;
+  }
+
+  .archive-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   body {
