@@ -1,6 +1,7 @@
 const form = document.getElementById('letter-form');
 const nicknameInput = document.getElementById('nickname');
 const letterInput = document.getElementById('letter');
+const websiteInput = document.getElementById('website');
 const postsRoot = document.getElementById('posts');
 const refreshButton = document.getElementById('refresh');
 const statusNode = document.getElementById('form-status');
@@ -409,6 +410,7 @@ async function submitLetter(event) {
   const payload = {
     nickname: nicknameInput.value,
     letter: letterInput.value,
+    website: websiteInput ? websiteInput.value : '',
   };
 
   try {

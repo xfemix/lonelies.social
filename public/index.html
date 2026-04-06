@@ -61,6 +61,15 @@
       <section class="panel writer" aria-labelledby="write-title">
         <h2 id="write-title">Write a letter</h2>
         <form id="letter-form" novalidate>
+          <input
+            id="website"
+            name="website"
+            class="honeypot"
+            type="text"
+            tabindex="-1"
+            autocomplete="off"
+            aria-hidden="true"
+          />
           <label for="nickname">Name or nickname (leave it blank if you want)</label>
           <input
             id="nickname"

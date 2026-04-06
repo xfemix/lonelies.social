@@ -2,11 +2,87 @@ const { Pool } = require('pg');
 
 let pool;
 const requestBuckets = new Map();
+const recentPostFingerprints = new Map();
 
 const WINDOW_MS = 60 * 1000;
 const CREATE_LIMIT_PER_WINDOW = 20;
 const READ_LIMIT_PER_WINDOW = 120;
 const FETCH_LIMIT_PER_WINDOW = 180;
+const DUPLICATE_WINDOW_MS = 30 * 60 * 1000;
+const LINK_PATTERNS = [
+  /(https?:\/\/|www\.)\S+/i,
+  /\[[^\]]+\]\((https?:\/\/|www\.)[^)]+\)/i,
+  /\b[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.(?:com|net|org|io|co|ng|me|app|dev|xyz|info|biz|site|link|ly|gg|tv|ai)\b/i,
+];
+
+function hasLink(text) {
+  const source = String(text || '');
+  return LINK_PATTERNS.some((pattern) => pattern.test(source));
+}
+
+function compactText(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
+
+function simpleHash(text) {
+  let hash = 5381;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = ((hash << 5) + hash) ^ text.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+function isLikelySpamText(text) {
+  const source = compactText(text);
+  if (!source) return false;
+
+  if (/(.)\1{13,}/.test(source)) {
+    return true;
+  }
+
+  const words = source.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length >= 12) {
+    const counts = new Map();
+    for (const word of words) {
+      const next = (counts.get(word) || 0) + 1;
+      counts.set(word, next);
+      if (next >= 10 && word.length > 2) {
+        return true;
+      }
+    }
+  }
+
+  if (source.length >= 60) {
+    const uniqueChars = new Set(source.toLowerCase().replace(/\s+/g, '')).size;
+    const ratio = uniqueChars / Math.max(1, source.replace(/\s+/g, '').length);
+    if (ratio < 0.08) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isRecentDuplicate(ip, nickname, letter) {
+  const now = Date.now();
+
+  if (recentPostFingerprints.size > 12000) {
+    for (const [key, timestamp] of recentPostFingerprints.entries()) {
+      if (now - timestamp > DUPLICATE_WINDOW_MS) {
+        recentPostFingerprints.delete(key);
+      }
+    }
+  }
+
+  const fingerprint = simpleHash(`${ip}|${compactText(nickname).toLowerCase()}|${compactText(letter).toLowerCase()}`);
+  const previous = recentPostFingerprints.get(fingerprint);
+  if (previous && now - previous <= DUPLICATE_WINDOW_MS) {
+    return true;
+  }
+
+  recentPostFingerprints.set(fingerprint, now);
+  return false;
+}
 
 function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
@@ -353,13 +429,34 @@ module.exports = async function handler(req, res) {
 
     const nicknameRaw = typeof body.nickname === 'string' ? body.nickname.trim() : '';
     const letterRaw = typeof body.letter === 'string' ? body.letter.trim() : '';
+    const websiteRaw = typeof body.website === 'string' ? body.website.trim() : '';
+
+    if (websiteRaw) {
+      return sendJson(res, 400, { error: 'Spam check failed.' });
+    }
 
     if (!letterRaw) {
       return sendJson(res, 400, { error: 'Letter cannot be empty.' });
     }
 
+    if (letterRaw.length < 3) {
+      return sendJson(res, 400, { error: 'Letter is too short.' });
+    }
+
     if (letterRaw.length > 10000) {
       return sendJson(res, 400, { error: 'Letter is too long (max 10000 characters).' });
+    }
+
+    if (hasLink(letterRaw) || hasLink(nicknameRaw)) {
+      return sendJson(res, 400, { error: 'Links are not allowed in posts.' });
+    }
+
+    if (isLikelySpamText(letterRaw)) {
+      return sendJson(res, 400, { error: 'Post looks like spam. Please rewrite and try again.' });
+    }
+
+    if (isRecentDuplicate(getClientIp(req), nicknameRaw, letterRaw)) {
+      return sendJson(res, 429, { error: 'Duplicate post detected. Please wait before posting again.' });
     }
 
     const nickname = nicknameRaw.slice(0, 40) || null;
