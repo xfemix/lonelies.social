@@ -276,7 +276,10 @@ module.exports = async function handler(req, res) {
         values
       );
 
-      return sendJson(res, 200, { posts: result.rows });
+      const totalCountResult = await client.query('SELECT COUNT(*)::INT AS total FROM letters');
+      const totalLetters = Number(totalCountResult.rows[0]?.total || 0);
+
+      return sendJson(res, 200, { posts: result.rows, totalLetters });
     }
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};

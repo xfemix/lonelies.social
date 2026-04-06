@@ -17,6 +17,7 @@ const monthFilterButton = document.getElementById('month-filter');
 const clearMonthFilterButton = document.getElementById('clear-month-filter');
 const calendarGrid = document.getElementById('calendar-grid');
 const calendarSummary = document.getElementById('calendar-summary');
+const totalLettersNode = document.getElementById('total-letters');
 
 const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters, Archive, and Search';
 let latestPosts = [];
@@ -43,6 +44,12 @@ function hasDraft() {
 function setStatus(message, isError = false) {
   statusNode.textContent = message;
   statusNode.classList.toggle('error', Boolean(isError));
+}
+
+function setTotalLetters(count) {
+  if (!totalLettersNode) return;
+  const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
+  totalLettersNode.textContent = String(safeCount);
 }
 
 function formatDate(isoString) {
@@ -172,8 +179,10 @@ async function loadPosts() {
       throw new Error(data.error || 'Could not load posts.');
     }
 
+    setTotalLetters(data.totalLetters);
     renderPosts(data.posts || []);
   } catch (error) {
+    setTotalLetters(0);
     renderPosts([]);
     setStatus(error.message || 'Could not load posts.', true);
   }
