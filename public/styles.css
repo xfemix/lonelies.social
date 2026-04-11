@@ -8,6 +8,28 @@
   --danger: #ff7272;
   --panel: rgba(11, 16, 33, 0.78);
   --line: rgba(245, 215, 77, 0.45);
+  --hero-bg: rgba(245, 215, 77, 0.05);
+  --surface: rgba(0, 0, 0, 0.32);
+  --soft-surface: rgba(0, 0, 0, 0.2);
+  --page-tint: radial-gradient(circle at 20% 18%, rgba(53, 224, 181, 0.09), transparent 46%);
+  --page-gradient: linear-gradient(165deg, #0c1226, #10222e);
+}
+
+:root[data-theme="light"] {
+  --bg-1: #f8f4e7;
+  --bg-2: #dce8ef;
+  --ink: #1f2a2f;
+  --muted: #5a676d;
+  --neon: #a26900;
+  --neon-2: #0c8d6f;
+  --danger: #b53636;
+  --panel: rgba(255, 255, 255, 0.82);
+  --line: rgba(162, 105, 0, 0.42);
+  --hero-bg: rgba(255, 255, 255, 0.7);
+  --surface: rgba(255, 255, 255, 0.88);
+  --soft-surface: rgba(255, 255, 255, 0.62);
+  --page-tint: radial-gradient(circle at 18% 12%, rgba(12, 141, 111, 0.12), transparent 52%);
+  --page-gradient: linear-gradient(165deg, #f8f4e7, #dce8ef);
 }
 
 * {
@@ -23,9 +45,7 @@ body {
 body {
   color: var(--ink);
   font-family: "Courier New", Courier, monospace;
-  background:
-    radial-gradient(circle at 20% 18%, rgba(53, 224, 181, 0.09), transparent 46%),
-    linear-gradient(165deg, #0c1226, #10222e);
+  background: var(--page-tint), var(--page-gradient);
   padding: 1.2rem;
   overflow-x: hidden;
 }
@@ -49,10 +69,17 @@ body {
   max-width: 1100px;
   margin: 0 auto 1rem;
   border: 1px solid var(--line);
-  background: rgba(245, 215, 77, 0.05);
+  background: var(--hero-bg);
   padding: 1rem;
   box-shadow: 0 0 0 3px rgba(245, 215, 77, 0.1), 0 16px 35px rgba(0, 0, 0, 0.35);
   animation: pop-in 0.6s ease;
+}
+
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
 }
 
 .badge {
@@ -77,6 +104,19 @@ h1 {
   margin: 0;
   max-width: 70ch;
   color: var(--muted);
+}
+
+.theme-toggle {
+  min-width: 2.2rem;
+  min-height: 2.2rem;
+  display: inline-grid;
+  place-items: center;
+  padding: 0.25rem;
+}
+
+#theme-icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .total-banner {
@@ -167,7 +207,7 @@ h1 {
   max-height: 88vh;
   overflow-y: auto;
   border: 1px solid var(--line);
-  background: rgba(8, 13, 25, 0.96);
+  background: var(--panel);
   padding: 1rem;
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
 }
@@ -219,7 +259,7 @@ h1 {
 .share-feedback-card {
   width: min(460px, 100%);
   border: 1px solid var(--line);
-  background: rgba(8, 13, 25, 0.97);
+  background: var(--panel);
   padding: 1rem;
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
 }
@@ -243,7 +283,7 @@ h1 {
   padding: 0.55rem;
   text-decoration: none;
   color: var(--ink);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--soft-surface);
 }
 
 .share-channel:hover {
@@ -300,7 +340,7 @@ textarea,
 select {
   width: 100%;
   border: 1px solid rgba(245, 215, 77, 0.45);
-  background: rgba(0, 0, 0, 0.32);
+  background: var(--surface);
   color: var(--ink);
   padding: 0.65rem;
 }
@@ -367,6 +407,67 @@ button:hover {
   color: var(--muted);
 }
 
+.your-letters {
+  margin-top: 1rem;
+  border-top: 1px dashed rgba(245, 215, 77, 0.35);
+  padding-top: 0.75rem;
+}
+
+.your-letters-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.your-letters-head h3 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.your-letters-note {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.my-letters {
+  margin-top: 0.55rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.my-letter-item {
+  border: 1px dashed rgba(245, 215, 77, 0.35);
+  background: var(--soft-surface);
+  padding: 0.45rem;
+}
+
+.my-letter-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.my-letter-id {
+  color: var(--neon-2);
+  font-weight: 700;
+}
+
+.my-letter-meta {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.my-letter-empty {
+  color: var(--muted);
+  font-size: 0.86rem;
+  border: 1px dashed rgba(245, 215, 77, 0.35);
+  padding: 0.6rem;
+}
+
 .filters {
   margin-top: 0.55rem;
   display: grid;
@@ -409,7 +510,7 @@ button:hover {
   margin-top: 0.8rem;
   border: 1px dashed rgba(245, 215, 77, 0.35);
   padding: 0.7rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--soft-surface);
 }
 
 .calendar-head {
@@ -515,12 +616,16 @@ button:hover {
 
 .post {
   border: 1px dotted rgba(53, 224, 181, 0.45);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--soft-surface);
   padding: 0.65rem;
   transform: translateY(6px);
   opacity: 0;
   animation: rise-in 0.5s ease forwards;
   cursor: pointer;
+}
+
+:root[data-theme="light"] .scanlines {
+  opacity: 0.18;
 }
 
 .post.targeted {

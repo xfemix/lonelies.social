@@ -49,7 +49,12 @@
     <div class="scanlines" aria-hidden="true"></div>
 
     <header class="hero">
-      <p class="badge">NO LOGIN · NO TRACKERS · ANONYMOUS</p>
+      <div class="hero-top">
+        <p class="badge">NO LOGIN · NO TRACKERS · ANONYMOUS</p>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode" title="Toggle theme">
+          <span id="theme-icon" aria-hidden="true">🌙</span>
+        </button>
+      </div>
       <h1>lonelies.social</h1>
       <p class="tagline">
         Your place to vent and confess. Say anything without the fear of being identified or judged.
@@ -95,6 +100,15 @@
             <p id="form-status" class="status" role="status" aria-live="polite"></p>
           </div>
         </form>
+
+        <section class="your-letters" aria-labelledby="your-letters-title">
+          <div class="your-letters-head">
+            <h3 id="your-letters-title">Your letters</h3>
+            <button id="sync-my-letters" type="button">Sync views</button>
+          </div>
+          <p class="your-letters-note">Saved only in this browser.</p>
+          <div id="my-letters" class="my-letters" aria-live="polite"></div>
+        </section>
       </section>
 
       <section class="panel archive" aria-labelledby="archive-title">

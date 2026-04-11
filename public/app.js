@@ -20,6 +20,8 @@ const calendarGrid = document.getElementById('calendar-grid');
 const calendarSummary = document.getElementById('calendar-summary');
 const totalLettersNode = document.getElementById('total-letters');
 const todayReadsNode = document.getElementById('today-reads');
+const themeToggleButton = document.getElementById('theme-toggle');
+const themeIconNode = document.getElementById('theme-icon');
 const prevPageButton = document.getElementById('prev-page');
 const nextPageButton = document.getElementById('next-page');
 const pageInfoNode = document.getElementById('page-info');
@@ -37,15 +39,22 @@ const closeShareFeedbackButton = document.getElementById('close-share-feedback')
 const shareFeedbackText = document.getElementById('share-feedback-text');
 const shareXLink = document.getElementById('share-x');
 const shareRedditLink = document.getElementById('share-reddit');
+const myLettersRoot = document.getElementById('my-letters');
+const syncMyLettersButton = document.getElementById('sync-my-letters');
 
 const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters, Archive, and Search';
 const PAGE_SIZE = 30;
 const TAB_READ_PREFIX = 'lonelies-read-';
+const THEME_STORAGE_KEY = 'lonelies-theme';
+const MY_LETTERS_STORAGE_KEY = 'lonelies-my-letters';
+const MAX_MY_LETTERS = 60;
 let latestPosts = [];
 let currentPage = 1;
 let totalPages = 1;
 let todayReadsCount = 0;
 let activeModalPost = null;
+let myLetterPostsById = new Map();
+let myLettersLoading = false;
 
 const monthNames = [
   'January',
@@ -66,6 +75,60 @@ function hasDraft() {
   return Boolean(nicknameInput.value.trim() || letterInput.value.trim());
 }
 
+function preferredThemeFromSystem() {
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function readStoredTheme() {
+  try {
+    const value = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return value === 'light' || value === 'dark' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredTheme(theme) {
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch {
+    // Ignore storage failures and continue.
+  }
+}
+
+function applyTheme(theme) {
+  const safeTheme = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = safeTheme;
+  if (themeIconNode) {
+    themeIconNode.textContent = safeTheme === 'light' ? '☀️' : '🌙';
+  }
+  if (themeToggleButton) {
+    themeToggleButton.setAttribute(
+      'aria-label',
+      safeTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'
+    );
+    themeToggleButton.title = safeTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
+  }
+}
+
+function initTheme() {
+  const storedTheme = readStoredTheme();
+  applyTheme(storedTheme || preferredThemeFromSystem());
+
+  const media = window.matchMedia('(prefers-color-scheme: light)');
+  media.addEventListener('change', () => {
+    if (readStoredTheme()) return;
+    applyTheme(preferredThemeFromSystem());
+  });
+}
+
+function toggleTheme() {
+  const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  const next = current === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  writeStoredTheme(next);
+}
+
 function setStatus(message, isError = false) {
   statusNode.textContent = message;
   statusNode.classList.toggle('error', Boolean(isError));
@@ -80,6 +143,158 @@ function setTotalLetters(count) {
 function formatReadsLabel(count) {
   const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
   return `${safeCount} ${safeCount === 1 ? 'person' : 'people'} read this`;
+}
+
+function formatReadCountShort(count) {
+  const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
+  return `${safeCount} ${safeCount === 1 ? 'view' : 'views'}`;
+}
+
+function readMyLetterIds() {
+  try {
+    const raw = window.localStorage.getItem(MY_LETTERS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    const ids = parsed
+      .map((item) => {
+        if (Number.isInteger(Number(item))) return Number(item);
+        if (item && typeof item === 'object') return Number(item.id);
+        return NaN;
+      })
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    const deduped = Array.from(new Set(ids)).slice(0, MAX_MY_LETTERS);
+    return deduped;
+  } catch {
+    return [];
+  }
+}
+
+function writeMyLetterIds(ids) {
+  try {
+    window.localStorage.setItem(MY_LETTERS_STORAGE_KEY, JSON.stringify(ids.slice(0, MAX_MY_LETTERS)));
+  } catch {
+    // Ignore storage failures and continue.
+  }
+}
+
+function savePostedLetter(post) {
+  if (!post) return;
+  const id = Number(post.id);
+  if (!Number.isInteger(id) || id <= 0) return;
+
+  const existing = readMyLetterIds().filter((savedId) => savedId !== id);
+  existing.unshift(id);
+  writeMyLetterIds(existing);
+}
+
+function renderMyLetters() {
+  if (!myLettersRoot) return;
+
+  const letterIds = readMyLetterIds();
+  myLettersRoot.innerHTML = '';
+
+  if (!letterIds.length) {
+    const empty = document.createElement('p');
+    empty.className = 'my-letter-empty';
+    empty.textContent = 'No saved letters yet. Post one and it will appear here.';
+    myLettersRoot.append(empty);
+    return;
+  }
+
+  for (const letterId of letterIds) {
+    const item = document.createElement('article');
+    item.className = 'my-letter-item';
+
+    const top = document.createElement('div');
+    top.className = 'my-letter-top';
+
+    const idNode = document.createElement('span');
+    idNode.className = 'my-letter-id';
+    idNode.textContent = `#${letterId}`;
+
+    const openButton = document.createElement('button');
+    openButton.type = 'button';
+    openButton.textContent = 'Open';
+    openButton.dataset.openPost = String(letterId);
+
+    top.append(idNode, openButton);
+
+    const meta = document.createElement('p');
+    meta.className = 'my-letter-meta';
+    const post = myLetterPostsById.get(letterId);
+    if (post) {
+      meta.textContent = `${post.nickname || 'anonymous'} · ${formatDate(post.created_at)} · ${formatReadCountShort(post.read_count)}`;
+    } else {
+      meta.textContent = myLettersLoading ? 'Fetching latest details...' : 'Details unavailable right now.';
+    }
+
+    item.append(top, meta);
+    myLettersRoot.append(item);
+  }
+}
+
+async function fetchPostById(postId) {
+  const response = await fetch(`/api/posts?id=${postId}`);
+  const data = await response.json();
+  if (!response.ok || !data.post) {
+    throw new Error(data.error || 'Could not load letter.');
+  }
+  return data.post;
+}
+
+async function refreshMyLetters({ showStatus = false } = {}) {
+  const letterIds = readMyLetterIds();
+  if (!letterIds.length) {
+    myLetterPostsById = new Map();
+    myLettersLoading = false;
+    renderMyLetters();
+    if (showStatus) {
+      setStatus('No saved letters to sync yet.');
+    }
+    return;
+  }
+
+  myLettersLoading = true;
+  renderMyLetters();
+
+  const results = [];
+  const batchSize = 6;
+
+  for (let index = 0; index < letterIds.length; index += batchSize) {
+    const batch = letterIds.slice(index, index + batchSize);
+    const batchResults = await Promise.all(
+      batch.map(async (letterId) => {
+        try {
+          const post = await fetchPostById(letterId);
+          return [letterId, post];
+        } catch {
+          return [letterId, null];
+        }
+      })
+    );
+    results.push(...batchResults);
+  }
+
+  myLetterPostsById = new Map(results.filter(([, post]) => Boolean(post)));
+  myLettersLoading = false;
+  renderMyLetters();
+
+  if (showStatus) {
+    setStatus('Your letters refreshed from saved IDs.');
+  }
+}
+
+async function syncMyLettersWithServer() {
+  const letterIds = readMyLetterIds();
+  if (!letterIds.length) {
+    setStatus('No saved letters to sync yet.');
+    return;
+  }
+
+  await refreshMyLetters({ showStatus: true });
 }
 
 function setTodayReads(count) {
@@ -316,7 +531,8 @@ async function loadPosts() {
     currentPage = Number.isInteger(nextPage) && nextPage > 0 ? nextPage : 1;
     totalPages = Number.isInteger(nextTotalPages) && nextTotalPages > 0 ? nextTotalPages : 1;
     updatePaginationUi();
-    renderPosts(data.posts || []);
+    const posts = data.posts || [];
+    renderPosts(posts);
   } catch (error) {
     setTotalLetters(0);
     setTodayReads(0);
@@ -495,11 +711,9 @@ async function openSharedPostFromServer() {
   }
 
   try {
-    const response = await fetch(`/api/posts?id=${requestedPost}`);
-    const data = await response.json();
-    if (!response.ok || !data.post) return;
-    document.title = titleForPost(data.post);
-    openLetterModal(data.post);
+    const post = await fetchPostById(requestedPost);
+    document.title = titleForPost(post);
+    openLetterModal(post);
   } catch {
     // Keep default title if single post lookup fails.
   }
@@ -531,6 +745,12 @@ async function submitLetter(event) {
     }
 
     setStatus('Posted. Your letter is now part of the archive.');
+    savePostedLetter(data.post);
+    renderMyLetters();
+    refreshMyLetters().catch(() => {
+      myLettersLoading = false;
+      renderMyLetters();
+    });
     nicknameInput.value = '';
     letterInput.value = '';
     resetPagination();
@@ -709,6 +929,10 @@ if (toggleArchiveToolsButton) {
   });
 }
 
+if (themeToggleButton) {
+  themeToggleButton.addEventListener('click', toggleTheme);
+}
+
 if (closeLetterModalButton) {
   closeLetterModalButton.addEventListener('click', closeLetterModal);
 }
@@ -737,6 +961,40 @@ if (closeShareFeedbackButton) {
 if (shareFeedbackModal) {
   shareFeedbackModal.addEventListener('click', (event) => {
     if (event.target === shareFeedbackModal) closeShareFeedbackModal();
+  });
+}
+
+if (syncMyLettersButton) {
+  syncMyLettersButton.addEventListener('click', () => {
+    syncMyLettersWithServer().catch(() => {
+      setStatus('Could not sync your saved letters right now.', true);
+    });
+  });
+}
+
+if (myLettersRoot) {
+  myLettersRoot.addEventListener('click', async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement)) return;
+
+    const postId = Number(target.dataset.openPost);
+    if (!Number.isInteger(postId) || postId <= 0) return;
+
+    target.disabled = true;
+    const original = target.textContent;
+    target.textContent = 'Opening...';
+
+    try {
+      const post = await fetchPostById(postId);
+      myLetterPostsById.set(postId, post);
+      renderMyLetters();
+      openLetterModal(post);
+    } catch {
+      setStatus('Could not open this letter right now.', true);
+    } finally {
+      target.disabled = false;
+      target.textContent = original;
+    }
   });
 }
 
@@ -805,6 +1063,10 @@ postsRoot.addEventListener('click', async (event) => {
     if (postPayload) {
       postPayload.read_count = next.readCount;
       postElement.dataset.post = JSON.stringify(postPayload);
+      if (myLetterPostsById.has(postId)) {
+        myLetterPostsById.set(postId, postPayload);
+        renderMyLetters();
+      }
       if (activeModalPost && Number(activeModalPost.id) === postId) {
         openLetterModal(postPayload);
       }
@@ -852,6 +1114,12 @@ searchInput.addEventListener('keydown', (event) => {
 });
 
 updatePaginationUi();
+initTheme();
 syncArchiveToolsForViewport();
+renderMyLetters();
+refreshMyLetters().catch(() => {
+  myLettersLoading = false;
+  renderMyLetters();
+});
 loadPosts().then(openSharedPostFromServer);
 loadActivity();
