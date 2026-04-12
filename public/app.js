@@ -1004,6 +1004,11 @@ if (myLettersRoot) {
       const post = await fetchPostById(postId);
       myLetterPostsById.set(postId, post);
       renderMyLetters();
+      
+      const shareUrl = postShareUrl(postId);
+      window.history.replaceState(null, '', shareUrl);
+      updateCanonicalUrl();
+      
       openLetterModal(post);
     } catch {
       setStatus('Could not open this letter right now.', true);
