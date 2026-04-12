@@ -129,6 +129,22 @@ function toggleTheme() {
   writeStoredTheme(next);
 }
 
+function updateCanonicalUrl() {
+  const canonicalTag = document.getElementById('canonical');
+  if (!canonicalTag) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const postId = Number(params.get('post'));
+  const isValidPost = Number.isInteger(postId) && postId > 0;
+
+  const baseUrl = window.location.origin + window.location.pathname;
+  if (isValidPost) {
+    canonicalTag.href = `${baseUrl}?post=${postId}`;
+  } else {
+    canonicalTag.href = baseUrl;
+  }
+}
+
 function setStatus(message, isError = false) {
   statusNode.textContent = message;
   statusNode.classList.toggle('error', Boolean(isError));
@@ -1115,6 +1131,7 @@ searchInput.addEventListener('keydown', (event) => {
 
 updatePaginationUi();
 initTheme();
+updateCanonicalUrl();
 syncArchiveToolsForViewport();
 renderMyLetters();
 refreshMyLetters().catch(() => {
