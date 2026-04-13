@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/rss.xml",
+      "destination": "/api/rss.xml"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap.xml"
+    }
+  ]
+}
