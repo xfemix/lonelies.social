@@ -53,9 +53,14 @@
     <header class="hero">
       <div class="hero-top">
         <p class="badge">NO LOGIN · NO TRACKERS · ANONYMOUS</p>
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode" title="Toggle theme">
-          <span id="theme-icon" aria-hidden="true">🌙</span>
-        </button>
+        <div class="hero-actions">
+          <button id="rss-copy" class="theme-toggle rss-copy" type="button" aria-label="Copy RSS feed URL" title="Copy RSS feed URL">
+            <span aria-hidden="true">📡</span>
+          </button>
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode" title="Toggle theme">
+            <span id="theme-icon" aria-hidden="true">🌙</span>
+          </button>
+        </div>
       </div>
       <h1>lonelies.social</h1>
       <p class="tagline">
@@ -225,6 +230,18 @@
             <span>Share on Reddit</span>
           </a>
         </div>
+      </div>
+    </div>
+
+    <div id="rss-feedback-modal" class="share-feedback-modal" role="dialog" aria-modal="true" aria-labelledby="rss-feedback-title" hidden>
+      <div class="share-feedback-card">
+        <button id="close-rss-feedback" class="close-modal" type="button" aria-label="Close RSS info">
+          Close
+        </button>
+        <h2 id="rss-feedback-title">RSS URL Copied</h2>
+        <p id="rss-feedback-text" class="share-feedback-text">
+          RSS link copied. Paste it into your feed reader, then close this popup.
+        </p>
       </div>
     </div>
 

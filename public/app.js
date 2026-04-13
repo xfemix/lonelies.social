@@ -22,6 +22,7 @@ const totalLettersNode = document.getElementById('total-letters');
 const todayReadsNode = document.getElementById('today-reads');
 const themeToggleButton = document.getElementById('theme-toggle');
 const themeIconNode = document.getElementById('theme-icon');
+const rssCopyButton = document.getElementById('rss-copy');
 const prevPageButton = document.getElementById('prev-page');
 const nextPageButton = document.getElementById('next-page');
 const pageInfoNode = document.getElementById('page-info');
@@ -39,15 +40,19 @@ const closeShareFeedbackButton = document.getElementById('close-share-feedback')
 const shareFeedbackText = document.getElementById('share-feedback-text');
 const shareXLink = document.getElementById('share-x');
 const shareRedditLink = document.getElementById('share-reddit');
+const rssFeedbackModal = document.getElementById('rss-feedback-modal');
+const closeRssFeedbackButton = document.getElementById('close-rss-feedback');
+const rssFeedbackText = document.getElementById('rss-feedback-text');
 const myLettersRoot = document.getElementById('my-letters');
 const syncMyLettersButton = document.getElementById('sync-my-letters');
 
-const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters, Archive, and Search';
+const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters';
 const PAGE_SIZE = 30;
 const TAB_READ_PREFIX = 'lonelies-read-';
 const THEME_STORAGE_KEY = 'lonelies-theme';
 const MY_LETTERS_STORAGE_KEY = 'lonelies-my-letters';
 const MAX_MY_LETTERS = 60;
+const RSS_FEED_URL = 'https://lonelies.social/rss.xml';
 let latestPosts = [];
 let currentPage = 1;
 let totalPages = 1;
@@ -334,6 +339,11 @@ function closeShareFeedbackModal() {
   shareFeedbackModal.hidden = true;
 }
 
+function closeRssFeedbackModal() {
+  if (!rssFeedbackModal) return;
+  rssFeedbackModal.hidden = true;
+}
+
 function openShareFeedbackModal({ url, title, text, message }) {
   if (!shareFeedbackModal) return;
 
@@ -353,6 +363,29 @@ function openShareFeedbackModal({ url, title, text, message }) {
   }
 
   shareFeedbackModal.hidden = false;
+}
+
+function openRssFeedbackModal(message) {
+  if (!rssFeedbackModal) return;
+  if (rssFeedbackText) {
+    rssFeedbackText.textContent = message || 'RSS link copied. Paste it into your feed reader, then close this popup.';
+  }
+  rssFeedbackModal.hidden = false;
+}
+
+async function copyRssFeedUrl() {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(RSS_FEED_URL);
+      openRssFeedbackModal('RSS link copied. Paste it into your feed reader, then close this popup.');
+      return;
+    }
+
+    window.prompt('Copy this RSS URL:', RSS_FEED_URL);
+    openRssFeedbackModal('RSS URL is ready. Copy it into your feed reader, then close this popup.');
+  } catch {
+    setStatus('Could not copy RSS URL right now.', true);
+  }
 }
 
 function openLetterModal(post) {
@@ -949,6 +982,12 @@ if (themeToggleButton) {
   themeToggleButton.addEventListener('click', toggleTheme);
 }
 
+if (rssCopyButton) {
+  rssCopyButton.addEventListener('click', () => {
+    copyRssFeedUrl();
+  });
+}
+
 if (closeLetterModalButton) {
   closeLetterModalButton.addEventListener('click', closeLetterModal);
 }
@@ -977,6 +1016,16 @@ if (closeShareFeedbackButton) {
 if (shareFeedbackModal) {
   shareFeedbackModal.addEventListener('click', (event) => {
     if (event.target === shareFeedbackModal) closeShareFeedbackModal();
+  });
+}
+
+if (closeRssFeedbackButton) {
+  closeRssFeedbackButton.addEventListener('click', closeRssFeedbackModal);
+}
+
+if (rssFeedbackModal) {
+  rssFeedbackModal.addEventListener('click', (event) => {
+    if (event.target === rssFeedbackModal) closeRssFeedbackModal();
   });
 }
 
@@ -1027,6 +1076,11 @@ window.addEventListener('keydown', (event) => {
 
   if (event.key === 'Escape' && shareFeedbackModal && !shareFeedbackModal.hidden) {
     closeShareFeedbackModal();
+    return;
+  }
+
+  if (event.key === 'Escape' && rssFeedbackModal && !rssFeedbackModal.hidden) {
+    closeRssFeedbackModal();
   }
 });
 

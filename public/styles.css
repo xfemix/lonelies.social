@@ -82,6 +82,12 @@ body {
   gap: 0.7rem;
 }
 
+.hero-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .badge {
   display: inline-block;
   margin: 0;
@@ -116,6 +122,11 @@ h1 {
 
 #theme-icon {
   font-size: 1rem;
+  line-height: 1;
+}
+
+.rss-copy span {
+  font-size: 0.95rem;
   line-height: 1;
 }
 
