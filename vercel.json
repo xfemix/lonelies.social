@@ -1,17 +1,4 @@
 {
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.lonelies.social"
-        }
-      ],
-      "destination": "https://lonelies.social/:path*",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     {
       "source": "/rss.xml",
