@@ -46,7 +46,7 @@ const rssFeedbackText = document.getElementById('rss-feedback-text');
 const myLettersRoot = document.getElementById('my-letters');
 const syncMyLettersButton = document.getElementById('sync-my-letters');
 
-const DEFAULT_TITLE = 'lonelies.social | Anonymous Letters';
+const DEFAULT_TITLE = 'lonelies | Anonymous Letters';
 const PAGE_SIZE = 30;
 const TAB_READ_PREFIX = 'lonelies-read-';
 const THEME_STORAGE_KEY = 'lonelies-theme';
@@ -463,7 +463,7 @@ function currentActivitySelection() {
 
 function titleForPost(post) {
   const datePart = toIsoDate(post.created_at);
-  return `Archive ${datePart} #${post.id} | lonelies.social`;
+  return `Archive ${datePart} #${post.id} | lonelies`;
 }
 
 function setTitleFromLinkedPost(posts) {
